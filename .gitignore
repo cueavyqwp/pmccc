@@ -1,0 +1,14 @@
+/*
+
+!README-zh_cn.md
+!.gitignore
+!README.md
+!LICENSE
+!setup.py
+!pmcll
+!dist
+
+*__pycache__
+*.json
+*.jar
+*.pyc

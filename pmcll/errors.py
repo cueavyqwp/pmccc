@@ -1,0 +1,6 @@
+"""
+errors
+"""
+
+class StatusError( Exception ) : ...
+class HashError( Exception ) : ...
