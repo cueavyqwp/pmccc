@@ -184,6 +184,7 @@ class main :
         for i in json_data[ "libraries" ] :
             use = True
             if "rules" in i :
+                use = False
                 for r in i["rules"] :
                     if "os" in r :
                         if self.os not in r[ "os" ].values() :
