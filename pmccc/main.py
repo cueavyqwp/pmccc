@@ -5,7 +5,7 @@ main
 from .errors import *
 from . import func
 
-import requests
+import subprocess
 import zipfile
 import json
 import sys
@@ -19,6 +19,19 @@ class libs :
     def __init__( self , cp_lib : list[ dict ] , natives_lib : list[ dict ] ) -> None :
         self.libs = [ i[ "path" ] for i in cp_lib ]
         self.natives = [ i[ "path" ] for i in natives_lib ]
+
+
+class player :
+    """
+    player
+    """
+
+    def __init__( self , name : str , uuid : str = None ) -> None :
+        self.online = False
+        if uuid == None :
+            self.uuid = "a0a1a2a3a4a5a6a7fb1b2b3b4b5b6b7f"
+        self.token = self.uuid
+        self.name = name
 
 class main :
     """
@@ -36,11 +49,18 @@ class main :
             "assets" : os.path.join( path , "assets" ) ,
             "root" : path
         }
+        self.java_use = {
+            8 : [ "1.8" ] ,
+            16 : [ "16" , "17" ] ,
+            17 : [ "17" , "18" , "19" ] ,
+        }
         for path in self.path.values() :
             func.mkdir( path )
         os_type = sys.platform
+        self.cp_split = ":"
         if os_type == "win32" :
             self.os = "windows"
+            self.cp_split = ";"
         elif os_type == "linux" :
             self.os = "linux"
         else :
@@ -49,6 +69,7 @@ class main :
         self.urls = func.url_dict
         self.version = version
         self.name = name
+        self.javas = {}
 
     def url_replace( self , url : str ) -> str :
         """
@@ -63,11 +84,41 @@ class main :
         """
         get manifest
         """
-        data = requests.get( self.url_replace( self.urls[ "minecraft" ][ "manifest" ] ) )
-        if data.status_code == 200 :
-            return data.json()
-        else :
-            raise StatusError( data.status_code )
+        return func.json_get( self.url_replace( self.urls[ "minecraft" ][ "manifest" ] ) , os.path.join( self.path[ "versions" ] , "manifest.json" ) )
+
+    def java_get( self ) -> list :
+        """
+        get_javas
+        """
+        self.javas = {}
+        for i in os.environ[ "PATH" ].split( self.cp_split ) :
+            if "bin" in i and os.path.exists( i ) :
+                for file in os.listdir( i ) :
+                    if file in [ "javaw.exe" , "javaw" ] :
+                        for l in subprocess.check_output( [ os.path.join( i , "java" ) , "-version" ] , stderr = subprocess.STDOUT ).decode().split( "\"" ) :
+                            for s in l :
+                                if s not in [ str( n ) for n in range( 10 ) ] + [ "." , "_" , "-" ] :
+                                    break
+                            else :
+                                self.javas[ l ] = i
+        if not len( self.javas.items() ) :
+            raise func.JavaNotFindError()
+        return self.javas
+
+    def java( self , version : str ) -> str :
+        path = os.path.join( self.path[ "versions" ] , version , version + ".json" )
+        with open( path , "rb" ) as file :
+            json_data = json.load( file )
+        java_version = json_data[ "javaVersion" ][ "majorVersion" ]
+        javas = self.java_use[ java_version ]
+        ret = []
+        for key , value in self.javas.items() :
+            for i in javas :
+                if i in key :
+                    ret.append( value )
+        if not len( ret ) :
+            raise JavaNotFindError( javas )
+        return ret
 
     def install_version( self , mc_version : str , version : str , manifest : dict = None , jar_type : str = "client" ) -> None :
         """
@@ -131,8 +182,17 @@ class main :
         cp_lib = []
         files = []
         for i in json_data[ "libraries" ] :
+            use = True
+            if "rules" in i :
+                for r in i["rules"] :
+                    if "os" in r :
+                        if self.os not in r[ "os" ].values() :
+                            continue
+                    use = func.use_dict[ r[ "action" ] ]
+            if not use :
+                continue
             if "classifiers" in i[ "downloads" ] :
-                if self.os in i[ "natives" ] :
+                if self.os in i[ "natives" ] and i[ "natives" ][ self.os ] in i[ "downloads" ][ "classifiers" ] :
                     natives_lib.append( i[ "downloads" ][ "classifiers" ][ i[ "natives" ][ self.os ] ] )
                     natives_lib[ -1 ][ "path" ] = os.path.join( path , natives_lib[ -1 ][ "path" ] )
             else :
@@ -148,6 +208,9 @@ class main :
         return libs( cp_lib , natives_lib )
 
     def unzip_natives( self , lib : libs , version : str ) -> None :
+        """
+        unzip natives
+        """
         name = version
         path = os.path.join( self.path[ "versions" ] , name , f"{ name }-natives" )
         func.mkdir( path )
@@ -155,11 +218,33 @@ class main :
             with zipfile.ZipFile( i ) as file :
                 file.extractall( path )
 
-    def args( self , lib : libs , version : str ) :
+    def get( self , player : player , version : str ) :
+        """
+        get
+        """
+        lib = self.install_libraries( version )
+        self.install_assets( version )
+        self.unzip_natives( lib , version )
+        return self.args( lib , player , version )
+
+    def run( self , player : player , version : str , java : str = None ) :
+        """
+        run
+        """
+        if java == None :
+            self.get_javas()
+            java = os.path.join( self.java( version )[ 0 ] , "java" )
+        args = self.get( player , version )
+        os.system( f"{ java } {args}" )
+
+    def args( self , lib : libs , player : player , version : str ) :
+        """
+        args
+        """
         lib_str = ""
         args = ""
         for i in lib.libs :
-            lib_str += i + ";"
+            lib_str += i + self.cp_split
         path = os.path.join( self.path[ "versions" ] , version )
         natives = os.path.join( path , f"{ version }-natives" )
         with open( os.path.join( path , version + ".json" ) , "rb" ) as file :
@@ -203,8 +288,8 @@ class main :
         .replace("${assets_root}" , f"""\"{ self.path[ "assets" ] }\"""" ) \
         .replace("${game_assets}" , f"""\"{ self.path[ "assets" ] }\"""" ) \
         .replace("${assets_index_name}" , json_data["assets"] ) \
-        .replace("${auth_uuid}" , "0000000000003006998F555B11390A71" ) \
-        .replace("${auth_access_token}" , "0000000000003006998F555B11390A71" ) \
+        .replace("${auth_uuid}" , player.uuid ) \
+        .replace("${auth_access_token}" , player.token ) \
         .replace("${user_type}" , "msa" ) \
         .replace("${version_type}" , self.name ) \
         .replace("${natives_directory}" , f"\"{ natives }\"" ) \

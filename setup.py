@@ -4,7 +4,7 @@ import sys
 import os
 
 # 版本
-version = "0.02"
+version = "0.1.1"
 
 # 更新与导入
 pip.main( [ "install" , "--upgrade" , "setuptools" , "wheel" ] )

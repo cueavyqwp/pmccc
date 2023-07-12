@@ -43,6 +43,11 @@ url_dict = {
     }
 }
 
+use_dict = {
+    "allow" : True ,
+    "disallow" : False
+}
+
 def hash( data : str ) -> str :
     hash = hashlib.sha1()
     hash.update( data )
