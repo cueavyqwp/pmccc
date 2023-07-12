@@ -22,7 +22,7 @@ class libs :
 
 class main :
     """
-    pmcll
+    pmccc
     """
 
     def __init__( self , path : str = ".minecraft" , name : str = "" , version : str = "" ) -> None :

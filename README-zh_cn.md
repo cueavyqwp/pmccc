@@ -1,7 +1,7 @@
 <div align = "center" >
-    <h1>pmcll</h1>
+    <h1>pmccc</h1>
 
-*python minecraft launcher library*
+python minecraft launcher library
 
 ---
 
