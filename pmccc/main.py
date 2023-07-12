@@ -232,7 +232,7 @@ class main :
         run
         """
         if java == None :
-            self.get_javas()
+            self.java_get()
             java = os.path.join( self.java( version )[ 0 ] , "java" )
         args = self.get( player , version )
         os.system( f"{ java } {args}" )
