@@ -1,0 +1,9 @@
+/*
+
+!src
+!docs
+!LICENSE
+!.gitignore
+
+*__pycache__
+*.egg-info
