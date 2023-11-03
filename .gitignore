@@ -1,14 +1,9 @@
 /*
 
-!README-zh_cn.md
-!.gitignore
-!README.md
+!src
+!docs
 !LICENSE
-!setup.py
-!pmccc
-!dist
+!.gitignore
 
 *__pycache__
-*.json
-*.jar
-*.pyc
+*.egg-info
