@@ -46,6 +46,5 @@ class download( url ) :
         self.proxy = {}
         super().__init__()
 
-    def __call__( self , url : str , file : str ) -> None :
-        url = super().__call__( url , self.mirror )
-        response = requests.get( url , headers = self.header , proxies = self.proxy , stream = True )
+    def response( self , url : str , **kwargs ) -> requests.Response :
+        return requests.get( super().__call__( url , self.mirror ) , headers = self.header , proxies = self.proxy , **kwargs )

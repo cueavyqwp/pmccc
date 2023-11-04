@@ -1,4 +1,6 @@
+import urllib.parse
 import subprocess
+import threading
 import traceback
 import platform
 import hashlib
@@ -35,3 +37,13 @@ def check_file( path : str ) -> bool :
     check_path( os.path.dirname( path ) )
     with open( path , "w" ) : pass
     return False
+
+def check_hash( file : str | bytes , sha1 : str ) :
+    if isinstance( file , str ) :
+        with open( file , "rb" ) as f : file = f.read()
+    hash = hashlib.sha1( file )
+    hash.update( file )
+    return hash.hexdigest() == sha1
+
+def url_filename( url : str ) -> str :
+    return os.path.basename( urllib.parse.urlsplit( url ).path )

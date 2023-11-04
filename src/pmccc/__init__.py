@@ -2,6 +2,7 @@
 pmccc
 """
 
+from .error import *
 from .func import *
 from .main import *
 
