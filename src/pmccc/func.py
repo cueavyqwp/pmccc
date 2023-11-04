@@ -1,14 +1,18 @@
 import subprocess
+import traceback
 import platform
+import hashlib
 import sys
 import os
 import re
 
-__all__ = [ "osname" , "osarch" ]
+__all__ = [ "osname" , "osarch" , "osversion" , "chdir" , "check_rules" , "check_path" , "check_file" ]
 
 osname = str( { "win32" : "windows" , "linux" : "linux" , "cygwin" : "linux" , "darwin" : "osx" }.get( sys.platform ) ).replace( "None" , "" )
 osarch = str( { "64bit" : "x64" , "32bit" : "x86" }.get( platform.architecture()[ 0 ] ) ).replace( "None" , "" )
 osversion = platform.version()
+
+chdir = lambda : os.chdir( os.path.dirname( traceback.extract_stack()[ -2 ].filename ) )
 
 def check_rules( rules : dict | list , osname : str = osname , osarch : str = osarch , osversion : str = osversion ) -> bool :
     rules = rules[ "rules" ] if isinstance( rules , dict ) else rules
@@ -20,3 +24,14 @@ def check_rules( rules : dict | list , osname : str = osname , osarch : str = os
             if "version" in value[ "os" ] and not re.search( value[ "os" ][ "version" ] , osversion ) : continue
         action = value[ "action" ]
     return action == "allow"
+
+def check_path( path : str ) -> bool :
+    if os.path.exists( path ) : return True
+    os.makedirs( path )
+    return False
+
+def check_file( path : str ) -> bool :
+    if os.path.exists( path ) : return True
+    check_path( os.path.dirname( path ) )
+    with open( path , "w" ) : pass
+    return False
