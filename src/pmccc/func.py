@@ -17,7 +17,9 @@ osversion = platform.version()
 chdir = lambda : os.chdir( os.path.dirname( traceback.extract_stack()[ -2 ].filename ) )
 
 def check_rules( rules : dict | list , osname : str = osname , osarch : str = osarch , osversion : str = osversion ) -> bool :
-    rules = rules[ "rules" ] if isinstance( rules , dict ) else rules
+    if isinstance( rules , dict ) :
+        if "rules" in rules : rules = rules[ "rules" ]
+        else : return True
     action = "disallow"
     for value in rules :
         if "os" in value :
