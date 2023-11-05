@@ -8,7 +8,7 @@ import sys
 import os
 import re
 
-__all__ = [ "osname" , "osarch" , "osversion" , "chdir" , "check_rules" , "check_path" , "check_file" ]
+__all__ = [ "osname" , "osarch" , "osversion" , "chdir" , "check_rules" , "check_path" , "check_file" , "get_filename" , "get_download" ]
 
 osname = str( { "win32" : "windows" , "linux" : "linux" , "cygwin" : "linux" , "darwin" : "osx" }.get( sys.platform ) ).replace( "None" , "" )
 osarch = str( { "64bit" : "x64" , "32bit" : "x86" }.get( platform.architecture()[ 0 ] ) ).replace( "None" , "" )
@@ -23,9 +23,10 @@ def check_rules( rules : dict | list , osname : str = osname , osarch : str = os
     action = "disallow"
     for value in rules :
         if "os" in value :
-            if "arch" in value[ "os" ] and osarch != value[ "os" ][ "arch" ] : continue
-            if "name" in value[ "os" ] and osname != value[ "os" ][ "name" ] : continue
-            if "version" in value[ "os" ] and not re.search( value[ "os" ][ "version" ] , osversion ) : continue
+            v = value[ "os" ]
+            if "arch" in v and osarch != v[ "arch" ] : continue
+            if "name" in v and osname != v[ "name" ] : continue
+            if "version" in v and not re.search( v[ "version" ] , osversion ) : continue
         action = value[ "action" ]
     return action == "allow"
 
@@ -47,5 +48,27 @@ def check_hash( file : str | bytes , sha1 : str ) :
     hash.update( file )
     return hash.hexdigest() == sha1
 
-def url_filename( url : str ) -> str :
+def get_filename( url : str ) -> str :
     return os.path.basename( urllib.parse.urlsplit( url ).path )
+
+def get_path( data : str | dict ) -> str :
+    if isinstance( data , dict ) :
+        if "path" in data : return data[ "path" ]
+        name = data[ "name" ]
+    else :
+        name = data
+    path , name = name.split( ":" , 1 )
+    path = path.split( "." )
+    name , version = name.split( ":" , 1 )
+    version = version.split( ":" )
+    path += [ name , version[ 0 ] , "-".join( [ name , *version ] ) + ".jar" ]
+    return "/".join( path )
+
+def get_download( data : dict , name : str = "" ) -> list :
+    if not name and "name" in data : name = data[ "name" ]
+    download = [ "" , "" , 0 , None ]
+    download[ 0 ] = data[ "url" ]
+    download[ 1 ] = data[ "path" ] if "path" in data else get_path( name )
+    if "size" in data : download[ 2 ] = data[ "size" ]
+    if "sha1" in data : download[ 3 ] = data[ "sha1" ]
+    return download

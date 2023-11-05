@@ -17,18 +17,18 @@ class main :
         self.os = [ func.osname , func.osarch , func.osversion ]
         self.path = path
 
-    def get_lib( self , data ) :
-        """
-        test
-        """
+    def get_lib( self , data : dict ) -> tuple[ list , list , list ] :
         downloads , libraries , natives = [] , [] , []
-        add = lambda value : downloads.append( [ value[ "url" ] , value[ "path" ] , value[ "size" ] , value[ "sha1" ] ] )
+        add = lambda value , name = "" : downloads.append( func.get_download( value , name ) )
         for value in [ value for value in data if func.check_rules( value , *self.os ) ] :
             if "natives" in value :
                 v = value[ "downloads" ][ "classifiers" ][ value[ "natives" ][ self.os[ 0 ] ] ]
-                natives.append( v[ "path" ] )
+                natives.append( func.get_path( v ) )
                 add( v )
-            v = value[ "downloads" ][ "artifact" ]
-            libraries.append( v[ "path" ] )
-            add( v )
+            if "downloads" in value :
+                v , name = value[ "downloads" ][ "artifact" ] , value[ "name" ]
+            else :
+                v , name = value , ""
+            libraries.append( func.get_path( v ) )
+            add( v , name )
         return downloads , libraries , natives
