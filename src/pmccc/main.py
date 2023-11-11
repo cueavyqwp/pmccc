@@ -1,3 +1,7 @@
+import zipfile
+import shutil
+import os
+
 from . import network
 from . import func
 
@@ -13,9 +17,18 @@ class main :
     def oslibsuffx( self ) -> str :
         return str( { "windows" : "dll" , "linux" : "so" , "osx" : "dylib" }.get( self.os[ 0 ] ) )
 
-    def __init__( self , path : str = "./minecraft" ) -> None :
+    def __init__( self ) -> None :
         self.os = [ func.osname , func.osarch , func.osversion ]
-        self.path = path
+
+    def get_java( self ) -> list :
+        javas = []
+        path = os.environ[ "path" ].split( self.ossplit )
+        if "JAVA_HOME" in os.environ : path.append( os.environ[ "JAVAHOME" ] )
+        for path in { s for s in path if os.path.exists( s ) and os.path.isdir( s ) } :
+            if not any( ( l := os.path.splitext( p ) )[ 0 ] == "javaw" for p in os.listdir( path ) ) : continue
+            data = func.get_java( os.path.normpath( os.path.join( path , "".join( l ) ) ) )
+            if data : javas.append( data )
+        return javas
 
     def get_lib( self , data : dict ) -> tuple[ list , list , list ] :
         downloads , libraries , natives = [] , [] , []

@@ -8,11 +8,12 @@ import sys
 import os
 import re
 
-__all__ = [ "osname" , "osarch" , "osversion" , "chdir" , "check_rules" , "check_path" , "check_file" , "get_filename" , "get_download" ]
+__all__ = [ "osname" , "osarch" , "osversion" , "javaversion" , "chdir" , "check_rules" , "check_path" , "check_file" , "get_filename" , "get_download" , "get_java" ]
 
 osname = str( { "win32" : "windows" , "linux" : "linux" , "cygwin" : "linux" , "darwin" : "osx" }.get( sys.platform ) ).replace( "None" , "" )
 osarch = str( { "64bit" : "x64" , "32bit" : "x86" }.get( platform.architecture()[ 0 ] ) ).replace( "None" , "" )
 osversion = platform.version()
+javaversion = { "8" : [ 8 ] , "16" : [ 16 ] , "17" : [ 16 , 17 ] }
 
 chdir = lambda : os.chdir( os.path.dirname( traceback.extract_stack()[ -2 ].filename ) )
 
@@ -55,8 +56,7 @@ def get_path( data : str | dict ) -> str :
     if isinstance( data , dict ) :
         if "path" in data : return data[ "path" ]
         name = data[ "name" ]
-    else :
-        name = data
+    else : name = data
     path , name = name.split( ":" , 1 )
     path = path.split( "." )
     name , version = name.split( ":" , 1 )
@@ -72,3 +72,10 @@ def get_download( data : dict , name : str = "" ) -> list :
     if "size" in data : download[ 2 ] = data[ "size" ]
     if "sha1" in data : download[ 3 ] = data[ "sha1" ]
     return download
+
+def get_java( java : str ) -> dict :
+    text = re.search( "\\\"(\\d+\\.\\d+).*\\\"" , subprocess.check_output( [ java , "-version" ] , stderr = subprocess.STDOUT ).decode().splitlines()[ 0 ] )
+    if text is None : return {}
+    text = ( s := text[ 0 ][ 1 : -1 ].replace( "_" , "." ) ).split( "." )[ : 2 ]
+    version = text[ 1 ] if text[ 0 ] == "1" else text[ 0 ]
+    return { "path" : java , "version" : version , "full" : s }

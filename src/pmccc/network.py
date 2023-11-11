@@ -2,7 +2,7 @@ import urllib.parse
 import requests
 import re
 
-__all__ = [ "urls" , "mirrors" , "url" , "download" ]
+__all__ = [ "urls" , "mirrors" , "url" , "task" ]
 
 urls = {
     "version" : "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json" ,
@@ -38,7 +38,7 @@ class url :
     def mirror_list( self ) -> list[ str ] :
         return list( self.mirrors.keys() )
 
-class download( url ) :
+class task( url ) :
 
     def __init__( self ) :
         self.header = { "User-Agent" : "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" }
