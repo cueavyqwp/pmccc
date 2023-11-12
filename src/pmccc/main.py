@@ -1,3 +1,4 @@
+import tempfile
 import zipfile
 import shutil
 import os
@@ -15,10 +16,21 @@ class main :
 
     @property
     def oslibsuffx( self ) -> str :
-        return str( { "windows" : "dll" , "linux" : "so" , "osx" : "dylib" }.get( self.os[ 0 ] ) )
+        return str( { "windows" : ".dll" , "linux" : ".so" , "osx" : ".dylib" }.get( self.os[ 0 ] ) )
 
     def __init__( self ) -> None :
         self.os = [ func.osname , func.osarch , func.osversion ]
+
+    def unzip_natives( self , natives : list , path : str , oslibsuffx : str | None = None ) -> None :
+        path = os.path.normpath( path )
+        if oslibsuffx is None : oslibsuffx = self.oslibsuffx
+        if os.path.exists( path ) : shutil.rmtree( path )
+        os.mkdir( path )
+        [ zipfile.ZipFile( file , "r" ).extractall( path ) for file in natives ]
+        for file in os.listdir( path ) :
+            file = os.path.join( path , file )
+            if os.path.isdir( file ) : shutil.rmtree( file )
+            elif os.path.splitext( file )[ -1 ] != oslibsuffx : os.remove( file )
 
     def get_java( self ) -> list :
         javas = []
@@ -31,6 +43,7 @@ class main :
         return javas
 
     def get_lib( self , data : dict ) -> tuple[ list , list , list ] :
+        if "libraries" in data : data = data[ "libraries" ]
         downloads , libraries , natives = [] , [] , []
         add = lambda value , name = "" : downloads.append( func.get_download( value , name ) )
         for value in [ value for value in data if func.check_rules( value , *self.os ) ] :
@@ -45,3 +58,11 @@ class main :
             libraries.append( func.get_path( v ) )
             add( v , name )
         return downloads , libraries , natives
+
+    def get_args( self , data : dict ) -> tuple[ list , list ] :
+        if "arguments" in data : data = data[ "arguments" ]
+        javaargs , gameargs = [] , [ value for value in data[ "game" ] if isinstance( value , str ) ]
+        for value in data[ "jvm" ] :
+            if isinstance( value , str ) : javaargs.append( value )
+            elif func.check_rules( value , *self.os ) : javaargs += func.tolist( value[ "value" ] )
+        return javaargs , gameargs

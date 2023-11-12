@@ -8,7 +8,7 @@ import sys
 import os
 import re
 
-__all__ = [ "osname" , "osarch" , "osversion" , "javaversion" , "chdir" , "check_rules" , "check_path" , "check_file" , "get_filename" , "get_download" , "get_java" ]
+__all__ = [ "osname" , "osarch" , "osversion" , "javaversion" , "chdir" , "tolist" , "check_rules" , "check_path" , "check_file" , "get_filename" , "get_download" , "get_java" ]
 
 osname = str( { "win32" : "windows" , "linux" : "linux" , "cygwin" : "linux" , "darwin" : "osx" }.get( sys.platform ) ).replace( "None" , "" )
 osarch = str( { "64bit" : "x64" , "32bit" : "x86" }.get( platform.architecture()[ 0 ] ) ).replace( "None" , "" )
@@ -16,6 +16,8 @@ osversion = platform.version()
 javaversion = { "8" : [ 8 ] , "16" : [ 16 ] , "17" : [ 16 , 17 ] }
 
 chdir = lambda : os.chdir( os.path.dirname( traceback.extract_stack()[ -2 ].filename ) )
+
+def tolist( obj : object ) -> list : return obj if isinstance( obj , list ) else [ obj ]
 
 def check_rules( rules : dict | list , osname : str = osname , osarch : str = osarch , osversion : str = osversion ) -> bool :
     if isinstance( rules , dict ) :
