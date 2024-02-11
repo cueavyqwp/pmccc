@@ -4,6 +4,7 @@
 !docs
 !LICENSE
 !.gitignore
+!requirements.txt
 
 *__pycache__
 *.egg-info
