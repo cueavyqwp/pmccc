@@ -22,7 +22,7 @@ class verify:
         self.hash = {"sha1": hashlib.sha1, "sha256": hashlib.sha256,
                      "sha512": hashlib.sha512, "md5": hashlib.md5}.get(type, hashlib.sha1)()
 
-    def update(self, data: str | bytes) -> verify:
+    def update(self, data: str | bytes) -> "verify":
         self.hash.update(data.encode() if isinstance(data, str) else data)
         return self
 
