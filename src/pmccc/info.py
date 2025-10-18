@@ -28,3 +28,7 @@ class info:
     @property
     def split(self) -> str:
         return ";" if self.os == "windows" else ":"
+
+    @property
+    def native(self) -> str:
+        return {"windows": "dll", "linux": "so", "osx": "jnilib"}.get(self.os, "dll")
