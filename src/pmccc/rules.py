@@ -1,0 +1,26 @@
+"""
+用于判断规则
+"""
+
+__all__ = ["check"]
+
+import typing
+import re
+
+from . import info as _info
+
+
+def check(rules: list[dict[str, typing.Any]], info: typing.Optional[_info.info] = None) -> bool:
+    ret = False
+    if info is None:
+        info = _info.info()
+    for rule in rules:
+        if "os" in rule:
+            if "name" in rule["os"] and rule["os"]["name"] != info.os:
+                continue
+            if "arch" in rule["os"] and rule["os"]["arch"] != info.arch:
+                continue
+            if "version" in rule["os"] and re.match(rule["os"]["version"], info.os_version) is None:
+                continue
+        ret = {"allow": True, "disallow": False}.get(rule["action"], False)
+    return ret
