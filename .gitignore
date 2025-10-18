@@ -3,8 +3,14 @@
 !src
 !docs
 !LICENSE
+!pack.py
 !.gitignore
-!requirements.txt
+!pyproject.json
+
+!LICENSE
+!.github
+!.gitignore
 
 *__pycache__
 *.egg-info
+*.py[cod]

@@ -1,0 +1,38 @@
+{
+    "project": {
+        "name": "pmccc",
+        "version": null,
+        "description": "A minecraft launcher core library for python",
+        "readme": "docs/README.md",
+        "requires-python": ">=3.10",
+        "keywords": [
+            "minecraft",
+            "minecraft-launcher"
+        ],
+        "classifiers": [
+            "Programming Language :: Python :: 3",
+            "Programming Language :: Python :: 3.10",
+            "Topic :: Games/Entertainment"
+        ],
+        "authors": [
+            {
+                "name": "cueavyqwp",
+                "email": "cueavy@outlook.com"
+            }
+        ],
+        "license": "MIT",
+        "urls": {
+            "Homepage": "https://github.com/cueavyqwp/pmccc",
+            "Bug": "https://github.com/cueavyqwp/pmccc/issues",
+            "Source": "https://github.com/cueavyqwp/pmccc.git",
+            "Documentation": "https://github.com/cueavyqwp/pmccc/tree/main/docs"
+        }
+    },
+    "tool": {
+        "setuptools": {
+            "package-dir": {
+                "": "src"
+            }
+        }
+    }
+}
