@@ -10,7 +10,10 @@ import os
 
 import toml
 
-# update pyproject.toml
+# 优先找src文件夹下的模块
+sys.path.insert(0, "src")
+
+# 更新 pyproject.toml
 with open("pyproject.json", "r", encoding="utf-8") as file:
     data = json.load(file)
 data["project"]["version"] = __import__(data["project"]["name"]).__version__
