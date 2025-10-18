@@ -11,6 +11,9 @@ from . import info as _info
 
 
 def check(rules: list[dict[str, typing.Any]], info: typing.Optional[_info.info] = None) -> bool:
+    """
+    传入规则列表,然后检查是否启用
+    """
     ret = False
     if info is None:
         info = _info.info()

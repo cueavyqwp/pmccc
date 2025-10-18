@@ -2,6 +2,8 @@
 寻找java以及相关处理
 """
 
+__all__ = ["java_info", "java_manager"]
+
 import subprocess
 import typing
 import re
@@ -13,6 +15,13 @@ from . import info as _info
 class java_info:
 
     def __init__(self, path: str, version: typing.Optional[str] = None, arch: typing.Optional[str] = None, jdk: bool = False):
+        """
+        Java版本信息
+
+        ---
+
+        path: javaw/java程序
+        """
         self.path = os.path.normpath(path)
         self.version = version
         self.arch = arch
@@ -20,6 +29,9 @@ class java_info:
 
     @property
     def major(self) -> int:
+        """
+        获取大版本号
+        """
         if self.version is None:
             return 8
         split = self.version.split(".")
@@ -36,6 +48,9 @@ class java_info:
 
 
 class java_manager:
+    """
+    Java管理器
+    """
 
     def __init__(self, path: typing.Optional[list[str]] = None, info: typing.Optional[_info.info] = None) -> None:
         self.info = _info.info() if info is None else info
@@ -44,13 +59,21 @@ class java_manager:
             value := self.check_java(item))] if path else None
 
     def add(self, java: java_info) -> None:
-        print(java)
+        """
+        把Java信息加入管理器
+        """
+        # 不加载位数不匹配的jre/jdk
+        if java.arch and java.arch != self.info.arch:
+            return
         if java.major not in self.java:
             self.java[java.major] = [java]
         else:
             self.java[java.major].append(java)
 
     def check_java(self, path: str) -> java_info | None:
+        """
+        传入bin目录,获取Java信息
+        """
         if not os.path.isdir(path):
             return
         target = ""
@@ -80,9 +103,17 @@ class java_manager:
         arch = "x86" if arch == "32" else f"x{arch}"
         return java_info(target, version, arch, jdk)
 
-    def search(self) -> None:
+    def search(self, dirs: typing.Optional[list[str]] = None) -> None:
+        """
+        通过文件夹找Java(非遍历)
+
+        默认通过环境变量来找
+        """
+        if dirs is None:
+            dirs = os.environ["PATH"].split(self.info.split)
+        # 防止重复加载
         loaded: set[int] = set()
-        for path in os.environ["PATH"].split(self.info.split):
+        for path in dirs:
             if not os.path.isdir(path):
                 continue
             if "bin" not in path and "bin" in os.listdir(path):

@@ -8,6 +8,9 @@ __all__ = ["to_path"]
 
 
 def to_path(text: str) -> str:
+    """
+    把name转为相对路径
+    """
     split = text.split(":")
     package = split[0]
     name = split[1]

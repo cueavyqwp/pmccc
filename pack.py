@@ -1,5 +1,5 @@
 """
-test and build
+测试并构建
 """
 
 import subprocess
