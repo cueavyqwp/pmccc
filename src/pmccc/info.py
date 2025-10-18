@@ -23,4 +23,8 @@ class info:
         self.arch = "x64" if "64" in platform.machine() else "x86"
 
     def __str__(self) -> str:
-        return f"{self.os}({self.os_version})-{self.arch}"
+        return f"{self.os}({self.os_version}) {self.arch}"
+
+    @property
+    def split(self) -> str:
+        return ";" if self.os == "windows" else ":"
