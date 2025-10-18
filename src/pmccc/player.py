@@ -20,6 +20,7 @@ class player_base:
     def __init__(self, name: str = "Dev", uuid: str = "0123456789abcdef0123456789abcdef") -> None:
         self.name = name
         self.uuid = uuid
+        self.type = "Legacy"
 
 
 class player_offline(player_base):
@@ -44,12 +45,21 @@ class player_online(player_base):
 
     刷新token若90天内没被使用就会失效
 
+    ---
+
+    参考
+
+    [Mojang API之Microsoft身份认证](https://blog.goodboyboy.top/posts/2111486279.html)
+
+    [dewycube/minecraft_token.py](https://gist.github.com/dewycube/223d4e9b3cddde932fbbb7cfcfb96759)
+
     """
 
     def __init__(self, microsoft_refresh_token: typing.Optional[str] = None):
         self.access_token: typing.Optional[str] = None
         self.microsoft_refresh_token = microsoft_refresh_token
         self.profile: dict[str, typing.Any] = {}
+        self.type = "msa"
 
     @property
     def name(self) -> str:
