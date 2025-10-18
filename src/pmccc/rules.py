@@ -10,14 +10,19 @@ import re
 from . import info as _info
 
 
-def check(rules: list[dict[str, typing.Any]], info: typing.Optional[_info.info] = None) -> bool:
+def check(rules: list[dict[str, typing.Any]], features: typing.Optional[dict[str, bool]] = None, info: typing.Optional[_info] = None) -> bool:
     """
     传入规则列表,然后检查是否启用
     """
     ret = False
     if info is None:
-        info = _info.info()
+        info = _info()
     for rule in rules:
+        if "features" in rule:
+            if features is not None and all(key in features and features[key] == value for key, value in rule["features"].items()):
+                ret = True
+            else:
+                return False
         if "os" in rule:
             if "name" in rule["os"] and rule["os"]["name"] != info.os:
                 continue

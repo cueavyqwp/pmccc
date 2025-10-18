@@ -52,8 +52,8 @@ class java_manager:
     Java管理器
     """
 
-    def __init__(self, path: typing.Optional[list[str]] = None, info: typing.Optional[_info.info] = None) -> None:
-        self.info = _info.info() if info is None else info
+    def __init__(self, path: typing.Optional[list[str]] = None, info: typing.Optional[_info] = None) -> None:
+        self.info = _info() if info is None else info
         self.java: dict[int, list[java_info]] = {}
         [self.add(value) for item in path if (
             value := self.check_java(item))] if path else None

@@ -2,11 +2,11 @@
 pmccc
 """
 
-from . import info
-from . import verify
-from . import rules
-from . import name
-from . import java
+from .info import *
+from .verify import *
+from .rules import *
+from .name import *
+from .version import *
+from .java import *
 
-__all__ = ["__version__", "info", "verify", "rules", "name", "java"]
 __version__ = "0.2.0"
