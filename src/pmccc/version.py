@@ -64,3 +64,12 @@ class version:
                 continue
             library.append(name.to_path(item["name"]))
         return library
+
+    def get_native(self) -> list[str]:
+        native: list[str] = []
+        for item in self.data["libraries"]:
+            if "natives" not in item or self.info.os not in item["natives"] or "rules" in item and not rules.check(item["rules"], info=self.info):
+                continue
+            native.append(item["downloads"]["classifiers"]
+                          [item["natives"][self.info.os]]["path"])
+        return native
