@@ -82,12 +82,17 @@ class version:
         获取库文件列表
         """
         library: dict[str, list[str]] = {}
+        optifine: typing.Optional[str] = None
         ret: list[str] = []
         for item in self.data["libraries"]:
-            if "rules" in item and not rules.check(item["rules"], info=self.info):
+            if "natives" in item or ("rules" in item and not rules.check(item["rules"], info=self.info)):
                 continue
             # 可能会有相同的库,比较版本号
             path = name.to_path(item["name"])
+            # optifine放最后
+            if "optifine" in path:
+                optifine = path
+                continue
             split = name.split(item["name"])
             value = split.pop(2)
             key = ":".join(split)
@@ -95,6 +100,8 @@ class version:
                 library[key] = [value, path]
         for value in library.values():
             ret.append(value[1])
+        if optifine is not None:
+            ret.append(optifine)
         return ret
 
     def get_native(self) -> list[str]:
@@ -119,9 +126,20 @@ class version:
         """
         合并jvm参数与游戏参数
         """
+        ret: list[str] = []
+        optifine = False
         if main_class is None:
-            main_class = self.data["mainClass"]
-        return [*jvm, main_class, *game]  # type: ignore
+            main_class: str = self.data["mainClass"]
+        for item in [*jvm, main_class, *game]:
+            # 对optifine做额外兼容
+            if item == "optifine.OptiFineForgeTweaker":
+                optifine = True
+                ret.pop()
+                continue
+            ret.append(item)
+        if optifine:
+            ret += ["--tweakClass", "optifine.OptiFineForgeTweaker"]
+        return ret
 
     def merge_cp(self, library: list[str], jar: str) -> str:
         """
