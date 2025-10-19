@@ -81,12 +81,21 @@ class version:
         """
         获取库文件列表
         """
-        library: list[str] = []
+        library: dict[str, list[str]] = {}
+        ret: list[str] = []
         for item in self.data["libraries"]:
             if "rules" in item and not rules.check(item["rules"], info=self.info):
                 continue
-            library.append(name.to_path(item["name"]))
-        return library
+            # 可能会有相同的库,比较版本号
+            path = name.to_path(item["name"])
+            split = name.split(item["name"])
+            value = split.pop(2)
+            key = ":".join(split)
+            if key not in library or name.compare(value, library[key][0]):
+                library[key] = [value, path]
+        for value in library.values():
+            ret.append(value[1])
+        return ret
 
     def get_native(self) -> list[str]:
         """
