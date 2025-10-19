@@ -9,5 +9,7 @@ from .name import *
 from .version import *
 from .native import *
 from .java import *
+from .launcher import *
+from .player import *
 
-__version__ = "0.2.0"
+from .pmccc_version import *

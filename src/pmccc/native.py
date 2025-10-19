@@ -2,7 +2,7 @@
 native相关处理
 """
 
-__all__ = ["unzip", "clear"]
+__all__ = ["unzip", "clear", "unzip_all"]
 
 import os
 import typing
@@ -23,7 +23,8 @@ def unzip(src: str, to: str, info: typing.Optional[_info] = None) -> None:
     with zipfile.ZipFile(src) as zp:
         for zipinfo in zp.filelist:
             name = os.path.basename(zipinfo.filename)
-            if name.endswith(info.native) and ((info.arch == "x64" and "64" in name) or (info.arch == "x86" and ("32" in name or ("86" in name and "64" not in name)))):
+            print(name)
+            if name.endswith(info.native) and ((info.arch == "x64" and not ("32" in name or "86" in name)) or (info.arch == "x86" and "64" not in name and ("32" in name or "86" in name))):
                 with zp.open(zipinfo) as fps:
                     with open(os.path.join(to, name), "wb") as fpt:
                         shutil.copyfileobj(fps, fpt)
@@ -41,3 +42,11 @@ def clear(src: str) -> None:
             shutil.rmtree(path)
         else:
             os.remove(path)
+
+
+def unzip_all(src: list[str], to: str, info: typing.Optional[_info] = None) -> None:
+    """
+    解压全部native
+    """
+    for file in src:
+        unzip(file, to, info)

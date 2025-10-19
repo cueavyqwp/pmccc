@@ -21,6 +21,7 @@ class player_base:
         self.name = name
         self.uuid = uuid
         self.type = "Legacy"
+        self.access_token: typing.Optional[str] = None
 
 
 class player_offline(player_base):
@@ -63,11 +64,11 @@ class player_online(player_base):
 
     @property
     def name(self) -> str:
-        return str(self.profile.get("name", ""))
+        return self.profile.get("name", "")
 
     @property
     def uuid(self) -> str:
-        return str(self.profile.get("id", ""))
+        return self.profile.get("id", "")
 
     @property
     def ready(self) -> bool:
