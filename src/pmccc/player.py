@@ -17,11 +17,14 @@ class player_base:
     玩家基类
     """
 
-    def __init__(self, name: str = "Dev", uuid: str = "0123456789abcdef0123456789abcdef") -> None:
-        self.name = name
-        self.uuid = uuid
+    def __init__(self) -> None:
+        self.name = "Dev"
+        self.uuid = "0123456789abcdef0123456789abcdef"
         self.type = "Legacy"
         self.access_token: typing.Optional[str] = None
+
+    def __str__(self) -> str:
+        return f"[{self.name}] <{self.uuid}> ({self.type})"
 
 
 class player_offline(player_base):
@@ -30,8 +33,12 @@ class player_offline(player_base):
     """
 
     def __init__(self, name: str) -> None:
-        super().__init__(name, str(_uuid.UUID(bytes=hashlib.md5(
-            f"OfflinePlayer:{name}".encode("utf-8")).digest())))
+        super().__init__()
+        self.name = name
+
+    @property
+    def uuid(self) -> str:
+        return str(_uuid.UUID(bytes=hashlib.md5(f"OfflinePlayer:{self.name}".encode("utf-8")).digest()))
 
 
 class player_online(player_base):

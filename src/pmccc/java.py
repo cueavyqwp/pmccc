@@ -41,7 +41,7 @@ class java_info:
             return int(split[0])
 
     def __str__(self) -> str:
-        return f"{'jdk' if self.jdk else 'jre'}({self.version}) {self.arch} <{self.path}>"
+        return f"{'jdk' if self.jdk else 'jre'}({self.version})[{self.arch}] <{self.path}>"
 
     def __hash__(self) -> int:
         return str(self).__hash__()
@@ -57,6 +57,14 @@ class java_manager:
         self.java: dict[int, list[java_info]] = {}
         [self.add(value) for item in path if (
             value := self.check_java(item))] if path else None
+
+    def __str__(self) -> str:
+        ret: list[str] = []
+        for key, value in self.java.items():
+            ret.append(f"JDK/JRE-{key}:")
+            for java in value:
+                ret.append(f"  {java}")
+        return "\n".join(ret)
 
     def add(self, java: java_info) -> None:
         """
@@ -80,15 +88,15 @@ class java_manager:
         version = None
         arch = None
         jdk = False
-        for name in os.listdir(path):
-            file = os.path.join(path, name)
+        for item in os.listdir(path):
+            file = os.path.join(path, item)
             if os.path.isdir(file):
                 continue
-            name = os.path.splitext(name)[0]
+            name = os.path.splitext(item)[0]
             if name == "javaw":
-                target = "javaw"
-            elif target != "javaw" and name == "java":
-                target = "java"
+                target = item
+            elif not target.startswith("javaw") and name == "java":
+                target = item
             elif name == "javac":
                 jdk = True
         if not target:
