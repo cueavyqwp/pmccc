@@ -5,11 +5,12 @@
 __all__ = ["version"]
 
 import typing
+import re
 
-from . import name
 from . import rules
 from . import verify
 from . import launcher
+from . import name as _name
 from . import info as _info
 from . import player as _player
 
@@ -81,25 +82,27 @@ class version:
         """
         获取库文件列表
         """
-        library: dict[str, list[str]] = {}
+        library: dict[str, str] = {}
         optifine: typing.Optional[str] = None
         ret: list[str] = []
         for item in self.data["libraries"]:
             if "natives" in item or ("rules" in item and not rules.check(item["rules"], info=self.info)):
                 continue
             # 可能会有相同的库,比较版本号
-            path = name.to_path(item["name"])
+            name = item["name"]
             # optifine放最后
-            if "optifine" in path:
-                optifine = path
+            if "optifine" in name:
+                optifine = _name.get_path(name)
                 continue
-            split = name.split(item["name"])
+            split = _name.split(item["name"])
             value = split.pop(2)
             key = ":".join(split)
-            if key not in library or name.compare(value, library[key][0]):
-                library[key] = [value, path]
-        for value in library.values():
-            ret.append(value[1])
+            if key not in library or _name.compare(value, library[key][0]):
+                library[key] = value
+        for key, value in library.items():
+            split = key.split(":")
+            split.insert(2, value)
+            ret.append(_name.to_path(*split))
         if optifine is not None:
             ret.append(optifine)
         return ret
@@ -129,7 +132,7 @@ class version:
         ret: list[str] = []
         optifine = False
         if main_class is None:
-            main_class: str = self.data["mainClass"]
+            main_class = str(self.data["mainClass"])
         for item in [*jvm, main_class, *game]:
             # 对optifine做额外兼容
             if item == "optifine.OptiFineForgeTweaker":
@@ -171,8 +174,8 @@ class version:
         if replacement is not None:
             data.update(replacement)
         for item in args:
-            for key in data.keys():
-                if key in item:
+            for key in re.findall("(\\$\\{\\w*\\})", item):
+                if key in data:
                     item = item.replace(key, data[key])
             ret.append(item)
         return ret
