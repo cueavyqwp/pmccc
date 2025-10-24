@@ -4,7 +4,7 @@
 
 __all__ = ["launcher_info"]
 
-from .pmccc_version import __version__
+from .pmccc import __version__
 
 import typing
 

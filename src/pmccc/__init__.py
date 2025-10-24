@@ -12,4 +12,4 @@ from .java import *
 from .launcher import *
 from .player import *
 
-from .pmccc_version import *
+from .pmccc import *

@@ -23,7 +23,7 @@ def unzip(src: str, to: str, info: typing.Optional[_info] = None) -> None:
     with zipfile.ZipFile(src) as zp:
         for zipinfo in zp.filelist:
             name = os.path.basename(zipinfo.filename)
-            if name.endswith(info.native) and ((info.arch == "x64" and not ("32" in name or "86" in name)) or (info.arch == "x86" and "64" not in name and ("32" in name or "86" in name))):
+            if name.endswith(info.native) and ("64" in name or "86" not in name or ("86" in name and "64" in name), "32" in name or ("86" in name and "64" not in name))[info.arch == "x86"]:
                 with zp.open(zipinfo) as fps:
                     with open(os.path.join(to, name), "wb") as fpt:
                         shutil.copyfileobj(fps, fpt)
