@@ -8,6 +8,8 @@ import hashlib
 import typing
 import enum
 
+import requests
+
 # 校验相关
 
 
@@ -34,8 +36,17 @@ class PmcccException(Exception):
     pmccc异常基类
     """
 
-    def __init__(self, *args: object) -> None:
+    def __init__(self) -> None:
         """
         pmccc异常
         """
-        super().__init__(*args)
+        pass
+
+
+class PmcccResponseError(PmcccException):
+    """
+    pmccc回应异常
+    """
+
+    def __init__(self, response: requests.Response) -> None:
+        self.response = response

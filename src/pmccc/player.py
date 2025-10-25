@@ -9,6 +9,8 @@ import hashlib
 import urllib.parse
 import uuid as _uuid
 
+from .types import PmcccResponseError
+
 import requests
 
 
@@ -21,10 +23,20 @@ class player_base:
         self.name = "Dev"
         self.uuid = "0123456789abcdef0123456789abcdef"
         self.type = "Legacy"
-        self.access_token: typing.Optional[str] = None
 
     def __str__(self) -> str:
         return f"[{self.name}] <{self.uuid}> ({self.type})"
+
+    @property
+    def ready(self) -> bool:
+        """
+        是否可以启动
+        """
+        return bool(self.name and self.uuid)
+
+    @property
+    def access_token(self) -> str:
+        return self.uuid
 
 
 class player_offline(player_base):
@@ -33,8 +45,8 @@ class player_offline(player_base):
     """
 
     def __init__(self, name: str) -> None:
-        super().__init__()
         self.name = name
+        self.type = "Legacy"
 
     @property
     def uuid(self) -> str:
@@ -64,8 +76,8 @@ class player_online(player_base):
     """
 
     def __init__(self, microsoft_refresh_token: typing.Optional[str] = None):
-        self.access_token: typing.Optional[str] = None
         self.microsoft_refresh_token = microsoft_refresh_token
+        self.access_token: typing.Optional[str] = None
         self.profile: dict[str, typing.Any] = {}
         self.type = "msa"
 
@@ -76,13 +88,6 @@ class player_online(player_base):
     @property
     def uuid(self) -> str:
         return self.profile.get("id", "")
-
-    @property
-    def ready(self) -> bool:
-        """
-        是否可以启动
-        """
-        return bool(self.name and self.uuid)
 
     def login_url(self) -> str:
         """
@@ -106,6 +111,8 @@ class player_online(player_base):
             "redirect_uri": "https://login.live.com/oauth20_desktop.srf",
             "grant_type": "authorization_code"
         })
+        if not response.ok:
+            raise PmcccResponseError(response)
         data = response.json()
         microsoft_token = data["access_token"]
         microsoft_refresh_token = data["refresh_token"]
@@ -124,6 +131,8 @@ class player_online(player_base):
             "RelyingParty": "http://auth.xboxlive.com",
             "TokenType": "JWT"
         })
+        if not response.ok:
+            raise PmcccResponseError(response)
         data = response.json()
         return data["Token"]
 
@@ -139,6 +148,8 @@ class player_online(player_base):
             "RelyingParty": "rp://api.minecraftservices.com/",
             "TokenType": "JWT"
         })
+        if not response.ok:
+            raise PmcccResponseError(response)
         data = response.json()
         return data["DisplayClaims"]["xui"][0]["uhs"], data["Token"]
 
@@ -149,6 +160,8 @@ class player_online(player_base):
         response = requests.post("https://api.minecraftservices.com/authentication/login_with_xbox", json={
             "identityToken": f"XBL3.0 x={xsts_userhash};{xsts_token}"
         })
+        if not response.ok:
+            raise PmcccResponseError(response)
         data = response.json()
         return data["access_token"]
 
@@ -180,7 +193,6 @@ class player_online(player_base):
         minecraft_token = self.login_token_minecraft(xsts_userhash, xsts_token)
         self.get_profile(minecraft_token)
         self.access_token = minecraft_token
-        self.microsoft_refresh_token = microsoft_refresh_token
         return True
 
     def refresh_token(self, microsoft_refresh_token: str) -> str:
@@ -193,6 +205,8 @@ class player_online(player_base):
             "grant_type": "refresh_token",
             "refresh_token": microsoft_refresh_token
         })
+        if not response.ok:
+            raise PmcccResponseError(response)
         data = response.json()
         return data["access_token"]
 
@@ -203,6 +217,8 @@ class player_online(player_base):
         response = requests.get("https://api.minecraftservices.com/minecraft/profile", headers={
             "Authorization": f"Bearer {minecraft_token}"
         })
+        if not response.ok:
+            raise PmcccResponseError(response)
         data = response.json()
         self.profile = data
         return data
