@@ -2,14 +2,18 @@
 pmccc
 """
 
-from .info import *
+from .launcher import *
 from .verify import *
-from .rules import *
-from .name import *
+from .info import *
+from .java import *
+
 from .version import *
 from .native import *
-from .java import *
-from .launcher import *
 from .player import *
+from .rules import *
+from .name import *
 
 from .pmccc import *
+from .misc import *
+
+from .types import *

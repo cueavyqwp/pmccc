@@ -2,37 +2,21 @@
 校验相关
 """
 
-__all__ = ["TYPES", "HASHER", "get_type", "hasher", "verify_hash"]
+__all__ = ["get_type", "hasher", "verify_hash"]
 
-import hashlib
 import typing
-import enum
 import os
 
-
-class TYPES(enum.Enum):
-
-    SHA1 = 0
-    SHA256 = 1
-    SHA512 = 2
-    MD5 = 3
+from .types import HASH_TYPE, HASHER
 
 
-HASHER = {
-    TYPES.SHA1: hashlib.sha1,
-    TYPES.SHA256: hashlib.sha256,
-    TYPES.SHA512: hashlib.sha512,
-    TYPES.MD5: hashlib.md5
-}
-
-
-def get_type(value: str) -> TYPES:
-    return {32: TYPES.MD5, 40: TYPES.SHA1, 64: TYPES.SHA256, 128: TYPES.SHA512}[len(value)]
+def get_type(value: str) -> HASH_TYPE:
+    return {32: HASH_TYPE.MD5, 40: HASH_TYPE.SHA1, 64: HASH_TYPE.SHA256, 128: HASH_TYPE.SHA512}[len(value)]
 
 
 class hasher:
 
-    def __init__(self, hasher: TYPES) -> None:
+    def __init__(self, hasher: HASH_TYPE) -> None:
         self.hash = HASHER[hasher]()
 
     def update(self, data: str | bytes) -> None:
