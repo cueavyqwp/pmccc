@@ -19,13 +19,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('pack.py') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-${{ hashFiles('pack.py') }}
+            ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
 
       - name: Build
         run: |
           python -m pip install --upgrade pip setuptools build toml
+          python -m pip install -r requirements.txt
           python pack.py
 
       - name: Upload
