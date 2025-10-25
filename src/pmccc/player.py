@@ -9,7 +9,7 @@ import hashlib
 import urllib.parse
 import uuid as _uuid
 
-from .types import PmcccResponseError
+from .types import SKIN_DEFAULT_TYPE, SKIN_ARM_TYPE, SKIN_DEFAULT,  PmcccResponseError
 
 import requests
 
@@ -35,6 +35,33 @@ class player_base:
         """
         return bool(self.name and self.uuid and self.access_token and self.type)
 
+    def hashcode(self) -> int:
+        """
+        以Java中UUID.hashCode()的方式获取哈希值
+        """
+        bytes_data = _uuid.UUID(self.uuid).bytes
+        # 提取mostSigBits和leastSigBits（Java是大端序）
+        most_sig_bits = int.from_bytes(bytes_data[:8])
+        least_sig_bits = int.from_bytes(bytes_data[8:])
+        result = ((most_sig_bits >> 32) ^ most_sig_bits ^
+                  (least_sig_bits >> 32) ^ least_sig_bits)
+        # 转换为32位有符号整数
+        result = result & 0xFFFFFFFF
+        if result > 0x7FFFFFFF:
+            result = result - 0x100000000
+        return result
+
+    def get_skin_default(self) -> tuple[SKIN_DEFAULT_TYPE, SKIN_ARM_TYPE]:
+        """
+        根据UUID获取默认皮肤以及手臂粗细
+        """
+        length = len(SKIN_DEFAULT)
+        index = self.hashcode() % (length * 2)
+        wide = False
+        if index >= length:
+            wide = True
+        return SKIN_DEFAULT[index % 9], SKIN_ARM_TYPE.WIDE if wide else SKIN_ARM_TYPE.SLIM
+
 
 class player_offline(player_base):
     """
@@ -48,8 +75,12 @@ class player_offline(player_base):
 
     @property
     def uuid(self) -> str:
-        self.access_token = str(_uuid.UUID(bytes=hashlib.md5(
-            f"OfflinePlayer:{self.name}".encode("utf-8")).digest()))
+        md5_bytes = bytearray(hashlib.md5(
+            f"OfflinePlayer:{self.name}".encode()).digest())
+        md5_bytes[6] = (md5_bytes[6] & 0x0F) | 0x30
+        md5_bytes[8] = (md5_bytes[8] & 0x3F) | 0x80
+        uuid_hex = md5_bytes.hex()
+        self.access_token = f"{uuid_hex[:8]}-{uuid_hex[8:12]}-{uuid_hex[12:16]}-{uuid_hex[16:20]}-{uuid_hex[20:]}"
         return self.access_token
 
 
