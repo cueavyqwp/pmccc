@@ -7,6 +7,9 @@ __all__ = ["info"]
 import platform
 import typing
 
+import platformdirs
+import psutil
+
 
 class info:
 
@@ -32,3 +35,34 @@ class info:
     @property
     def native(self) -> str:
         return {"windows": "dll", "linux": "so", "osx": "jnilib"}.get(self.os, "dll")
+
+    def path_user_data(self, appname: typing.Optional[str] = None) -> str:
+        return platformdirs.user_data_dir(appname, False, ensure_exists=True)
+
+    @property
+    def memory_total(self) -> int:
+        """
+        内存总量 (单位:字节)
+        """
+        return psutil.virtual_memory().total
+
+    @property
+    def memory_available(self) -> int:
+        """
+        内存可用 (单位:字节)
+        """
+        return psutil.virtual_memory().available
+
+    @property
+    def memory_used(self) -> int:
+        """
+        内存已用 (单位:字节)
+        """
+        return psutil.virtual_memory().used
+
+    @property
+    def memory_percent(self) -> float:
+        """
+        内存使用率
+        """
+        return psutil.virtual_memory().percent
