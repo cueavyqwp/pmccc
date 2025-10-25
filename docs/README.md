@@ -6,8 +6,6 @@
 
 这是一个基于`python`的`Minecraft`启动器核心
 
-不依赖第三方python库
-
 # 示例
 
 ## 启动器信息

@@ -6,6 +6,7 @@
 !pack.py
 !.gitignore
 !pyproject.json
+!requirements.txt
 
 !LICENSE
 !.github

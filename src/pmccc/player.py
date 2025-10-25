@@ -4,12 +4,12 @@
 
 __all__ = ["player_base", "player_offline", "player_online"]
 
-import json
 import typing
 import hashlib
 import urllib.parse
-import urllib.request
 import uuid as _uuid
+
+import requests
 
 
 class player_base:
@@ -99,15 +99,14 @@ class player_online(player_base):
         url: 第一步登录后跳转的地址
         """
         code = urllib.parse.urlparse(url).query.split("code=")[1].split("&")[0]
-        response = urllib.request.Request("https://login.live.com/oauth20_token.srf", bytes(urllib.parse.urlencode({
+        response = requests.post("https://login.live.com/oauth20_token.srf", data={
             "client_id": "00000000402B5328",
             "scope": "service::user.auth.xboxlive.com::MBI_SSL",
             "code": code,
             "redirect_uri": "https://login.live.com/oauth20_desktop.srf",
             "grant_type": "authorization_code"
-        }), encoding="utf-8"))
-        response = urllib.request.urlopen(response)
-        data = json.loads(response.read().decode("utf-8"))
+        })
+        data = response.json()
         microsoft_token = data["access_token"]
         microsoft_refresh_token = data["refresh_token"]
         return microsoft_token, microsoft_refresh_token
@@ -116,7 +115,7 @@ class player_online(player_base):
         """
         登录第三步,获取Xbox Live令牌
         """
-        response = urllib.request.Request("https://user.auth.xboxlive.com/user/authenticate", json.dumps({
+        response = requests.post("https://user.auth.xboxlive.com/user/authenticate", json={
             "Properties": {
                 "AuthMethod": "RPS",
                 "SiteName": "user.auth.xboxlive.com",
@@ -124,36 +123,33 @@ class player_online(player_base):
             },
             "RelyingParty": "http://auth.xboxlive.com",
             "TokenType": "JWT"
-        },).encode("utf-8"), headers={"Content-Type": "application/json"})
-        response = urllib.request.urlopen(response)
-        data = json.loads(response.read().decode("utf-8"))
+        })
+        data = response.json()
         return data["Token"]
 
     def login_token_xsts(self, xbox_live_token: str) -> tuple[str, str]:
         """
         登录第四步,获取XSTS令牌
         """
-        response = urllib.request.Request("https://xsts.auth.xboxlive.com/xsts/authorize", json.dumps({
+        response = requests.post("https://xsts.auth.xboxlive.com/xsts/authorize", json={
             "Properties": {
                 "SandboxId": "RETAIL",
                 "UserTokens": [xbox_live_token]
             },
             "RelyingParty": "rp://api.minecraftservices.com/",
             "TokenType": "JWT"
-        }).encode("utf-8"), headers={"Content-Type": "application/json"})
-        response = urllib.request.urlopen(response)
-        data = json.loads(response.read().decode("utf-8"))
+        })
+        data = response.json()
         return data["DisplayClaims"]["xui"][0]["uhs"], data["Token"]
 
     def login_token_minecraft(self, xsts_userhash: str, xsts_token: str) -> str:
         """
         登录第五步,获取Minecraft令牌
         """
-        response = urllib.request.Request("https://api.minecraftservices.com/authentication/login_with_xbox", json.dumps({
+        response = requests.post("https://api.minecraftservices.com/authentication/login_with_xbox", json={
             "identityToken": f"XBL3.0 x={xsts_userhash};{xsts_token}"
-        },).encode("utf-8"), headers={"Content-Type": "application/json"})
-        response = urllib.request.urlopen(response)
-        data = json.loads(response.read().decode("utf-8"))
+        })
+        data = response.json()
         return data["access_token"]
 
     def login_auto_init(self, url: str) -> str:
@@ -191,25 +187,23 @@ class player_online(player_base):
         """
         刷新Microsoft令牌
         """
-        response = urllib.request.Request("https://login.live.com/oauth20_token.srf", bytes(urllib.parse.urlencode({
+        response = requests.post("https://login.live.com/oauth20_token.srf", data={
             "scope": "service::user.auth.xboxlive.com::MBI_SSL",
             "client_id": "00000000402B5328",
             "grant_type": "refresh_token",
             "refresh_token": microsoft_refresh_token
-        }), encoding="utf-8"))
-        response = urllib.request.urlopen(response)
-        data = json.loads(response.read().decode("utf-8"))
+        })
+        data = response.json()
         return data["access_token"]
 
     def get_profile(self, minecraft_token: str) -> dict[str, typing.Any]:
         """
         获取档案
         """
-        response = urllib.request.Request("https://api.minecraftservices.com/minecraft/profile", headers={
+        response = requests.get("https://api.minecraftservices.com/minecraft/profile", headers={
             "Authorization": f"Bearer {minecraft_token}"
         })
-        response = urllib.request.urlopen(response)
-        data = json.loads(response.read().decode("utf-8"))
+        data = response.json()
         self.profile = data
         return data
 
