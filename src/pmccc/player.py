@@ -22,6 +22,7 @@ class player_base:
     def __init__(self) -> None:
         self.name = "Dev"
         self.uuid = "0123456789abcdef0123456789abcdef"
+        self.access_token = self.uuid
         self.type = "Legacy"
 
     def __str__(self) -> str:
@@ -32,11 +33,7 @@ class player_base:
         """
         是否可以启动
         """
-        return bool(self.name and self.uuid)
-
-    @property
-    def access_token(self) -> str:
-        return self.uuid
+        return bool(self.name and self.uuid and self.access_token and self.type)
 
 
 class player_offline(player_base):
@@ -47,10 +44,13 @@ class player_offline(player_base):
     def __init__(self, name: str) -> None:
         self.name = name
         self.type = "Legacy"
+        self.uuid
 
     @property
     def uuid(self) -> str:
-        return str(_uuid.UUID(bytes=hashlib.md5(f"OfflinePlayer:{self.name}".encode("utf-8")).digest()))
+        self.access_token = str(_uuid.UUID(bytes=hashlib.md5(
+            f"OfflinePlayer:{self.name}".encode("utf-8")).digest()))
+        return self.access_token
 
 
 class player_online(player_base):
