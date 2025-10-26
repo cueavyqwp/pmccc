@@ -84,7 +84,7 @@ class_path = version.merge_cp(library, "游戏jar文件路径")
 # 获取启动参数
 args = version.replace_args(
     launcher_info,
-    java_manager.java[21][0].path,  # 使用Java 21
+    java_manager,  # 这里会自动选择合适Java版本
     version.merge_args(jvm, game),
     class_path,
     player,

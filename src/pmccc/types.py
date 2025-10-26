@@ -67,11 +67,11 @@ class PmcccException(Exception):
     pmccc异常基类
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *args: tuple[typing.Any, ...], **kwargs: dict[str, typing.Any]) -> None:
         """
         pmccc异常
         """
-        pass
+        super().__init__(*args, **kwargs)
 
 
 class PmcccResponseError(PmcccException):
@@ -79,5 +79,13 @@ class PmcccResponseError(PmcccException):
     pmccc回应异常
     """
 
-    def __init__(self, response: requests.Response) -> None:
+    def __init__(self, response: requests.Response, *args: tuple[typing.Any, ...], **kwargs: dict[str, typing.Any]) -> None:
         self.response = response
+        super().__init__(*args, **kwargs)
+
+
+class PmcccJavaNotFoundError(PmcccException):
+    """
+    Java未找到异常
+    """
+    ...

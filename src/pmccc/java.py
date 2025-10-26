@@ -10,6 +10,26 @@ import re
 import os
 
 from . import info as _info
+from .types import PmcccJavaNotFoundError
+
+
+def select_java(version: int = 8, available: typing.Optional[list[int] | tuple[int]] = None) -> list[int]:
+    """
+    根据传入的Java版本返回可选的Java版本
+    """
+    target: list[int] = []
+    match version:
+        case 8:
+            target += [8, 9, 10, 11]
+        case 16:
+            target += [17, 16]
+        case 17:
+            target += [21, 17, 18, 19, 20, 22]
+        case 21:
+            target += [21, 22]
+        case _:
+            pass
+    return [value for value in target if available is None or value in available]
 
 
 class java_info:
@@ -52,9 +72,10 @@ class java_manager:
     Java管理器
     """
 
-    def __init__(self, path: typing.Optional[list[str]] = None, info: typing.Optional[_info] = None) -> None:
+    def __init__(self, path: typing.Optional[list[str]] = None, info: typing.Optional[_info] = None, selector: typing.Callable[[int, list[int]], list[int]] = select_java) -> None:
         self.info = _info() if info is None else info
         self.java: dict[int, list[java_info]] = {}
+        self.selector = selector
         [self.add(value) for item in path if (
             value := self.check_java(item))] if path else None
 
@@ -131,3 +152,12 @@ class java_manager:
                     continue
                 self.add(ret)
                 loaded.add(hash)
+
+    def select_java(self, target: int | str) -> list[str]:
+        """
+        根据传入的Java版本返回可选的Java版本
+        """
+        ret = self.selector(int(target), list(self.java.keys()))
+        if not ret:
+            raise PmcccJavaNotFoundError
+        return [info.path for value in ret for info in self.java[value]]
