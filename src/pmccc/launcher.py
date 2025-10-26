@@ -11,6 +11,9 @@ import typing
 
 
 class launcher_info:
+    """
+    启动器信息
+    """
 
     def __init__(self, name: typing.Optional[str] = None, version: typing.Optional[str] = None) -> None:
         if name is None:
@@ -21,7 +24,18 @@ class launcher_info:
         self.version = version
 
 
+class lanucher_config:
+    """
+    启动器配置
+    """
+
+    ...
+
+
 class launcher(launcher_info):
+    """
+    启动器主类
+    """
 
     def __init__(self, name: str | None = None, version: str | None = None) -> None:
         super().__init__(name, version)

@@ -3,6 +3,7 @@
 !src
 !docs
 !LICENSE
+!TODO.md
 !pack.py
 !.gitignore
 !pyproject.json
