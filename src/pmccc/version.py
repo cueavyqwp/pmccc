@@ -152,7 +152,7 @@ class version:
         """
         return f"{self.info.split.join([*library, jar])}"
 
-    def replace_args(self,  launcher_info: launcher.launcher_info, java: str | _java.java_manager, args: list[str], class_path: str, player: _player.player_base, game_directory: str, assets_directory: str, natives_directory: str, replacement: typing.Optional[dict[str, typing.Any]] = None, log4j2: str | bool = True) -> list[typing.Any]:
+    def replace_args(self,  launcher_info: launcher.launcher_info, java: str | _java.java_manager, args: list[str], class_path: str, player: _player.player_base, game_directory: str, assets_directory: str, natives_directory: str, replacement: typing.Optional[dict[str, typing.Any]] = None, log4j2: str | bool = True, force_utf8: bool = True) -> list[typing.Any]:
         """
         替换模板,获得完整的启动参数
         """
@@ -160,6 +160,8 @@ class version:
             java = java.select_java(
                 self.data["javaVersion"]["majorVersion"] if "javaVersion" in self.data else 8)[0]
         ret: list[typing.Any] = [java]
+        if force_utf8:
+            ret.append("-Dfile.encoding=UTF-8")
         data: dict[str, typing.Any] = {
             "${auth_player_name}": player.name,
             "${version_name}": self.data["id"],
