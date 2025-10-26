@@ -1,6 +1,14 @@
 name: build
 
-on: push
+on:
+  push:
+    paths:
+      - 'src/**'
+      - 'requirements.txt'
+      - 'pack.py'
+      - 'pyproject.json'
+  tags:
+    - '*'
 
 jobs:
   build:
