@@ -5,6 +5,7 @@
 __all__ = ["launcher_info"]
 
 from .pmccc import __version__
+from . import info
 
 import typing
 
@@ -18,3 +19,11 @@ class launcher_info:
             version = __version__
         self.name = name
         self.version = version
+
+
+class launcher(launcher_info):
+
+    def __init__(self, name: str | None = None, version: str | None = None) -> None:
+        super().__init__(name, version)
+        self.info = info()
+        self.path_user_data = self.info.path_user_data("pmccc")
