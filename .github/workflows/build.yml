@@ -7,8 +7,8 @@ on:
       - 'requirements.txt'
       - 'pack.py'
       - 'pyproject.json'
-  tags:
-    - '*'
+    tags:
+      - '*'
 
 jobs:
   build:
