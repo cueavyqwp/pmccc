@@ -2,16 +2,15 @@
 用于获取系统信息
 """
 
-__all__ = ["info"]
+__all__ = ["sysinfo_base"]
 
 import platform
 import typing
 
-import platformdirs
 import psutil
 
 
-class info:
+class sysinfo_base:
 
     def __init__(self) -> None:
         self.os: typing.Literal["windows", "linux", "osx"]
@@ -36,8 +35,8 @@ class info:
     def native(self) -> str:
         return {"windows": "dll", "linux": "so", "osx": "jnilib"}.get(self.os, "dll")
 
-    def path_user_data(self, appname: typing.Optional[str] = None) -> str:
-        return platformdirs.user_data_dir(appname, False, ensure_exists=True)
+
+class sysinfo(sysinfo_base):
 
     @property
     def memory_total(self) -> int:

@@ -1,3 +1,2 @@
-platformdirs
 requests
 psutil

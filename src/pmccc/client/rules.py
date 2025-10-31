@@ -7,16 +7,16 @@ __all__ = ["check"]
 import typing
 import re
 
-from . import info as _info
+from ..lib import system
 
 
-def check(rules: list[dict[str, typing.Any]], features: typing.Optional[dict[str, bool]] = None, info: typing.Optional[_info] = None) -> bool:
+def check(rules: list[dict[str, typing.Any]], features: typing.Optional[dict[str, bool]] = None, info: typing.Optional[system.sysinfo_base] = None) -> bool:
     """
     传入规则列表,然后检查是否启用
     """
     ret = False
     if info is None:
-        info = _info()
+        info = system.sysinfo_base()
     for rule in rules:
         if "features" in rule:
             if features is not None and all(key in features and features[key] == value for key, value in rule["features"].items()):

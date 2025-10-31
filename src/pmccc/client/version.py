@@ -8,23 +8,24 @@ import typing
 import os
 import re
 
-from . import rules
-from . import verify
-from . import launcher
-from . import java as _java
-from . import name as _name
-from . import info as _info
+from ..lib import verify
+from ..lib import system
+from ..lib import java as _java
+
+from . import namepath as _name
 from . import player as _player
+from . import launcher
+from . import rules
 
 
 class version:
 
-    def __init__(self, data: dict[str, typing.Any], info: typing.Optional[_info] = None) -> None:
+    def __init__(self, data: dict[str, typing.Any], info: typing.Optional[system.sysinfo_base] = None) -> None:
         """
         data: 版本json文件
         """
         self.data = data
-        self.info = _info() if info is None else info
+        self.info = system.sysinfo_base() if info is None else info
 
     def rename(self, id: str) -> tuple[tuple[str, str], tuple[str, str]]:
         """

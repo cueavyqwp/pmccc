@@ -4,8 +4,8 @@
 
 __all__ = ["launcher_info"]
 
-from .pmccc import __version__
-from . import info
+from ..pmccc import __version__
+from ..lib import system
 
 import typing
 
@@ -39,5 +39,4 @@ class launcher(launcher_info):
 
     def __init__(self, name: str | None = None, version: str | None = None) -> None:
         super().__init__(name, version)
-        self.info = info()
-        self.path_user_data = self.info.path_user_data("pmccc")
+        self.info = system.sysinfo()

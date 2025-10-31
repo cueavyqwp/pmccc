@@ -9,15 +9,15 @@ import typing
 import shutil
 import zipfile
 
-from . import info as _info
+from ..lib import system
 
 
-def unzip(src: str, to: str, info: typing.Optional[_info] = None) -> None:
+def unzip(src: str, to: str, info: typing.Optional[system.sysinfo_base] = None) -> None:
     """
     解压到指定文件夹下
     """
     if info is None:
-        info = _info()
+        info = system.sysinfo_base()
     if not os.path.isdir(to):
         os.makedirs(to)
     with zipfile.ZipFile(src) as zp:
@@ -43,7 +43,7 @@ def clear(src: str) -> None:
             os.remove(path)
 
 
-def unzip_all(src: list[str], to: str, info: typing.Optional[_info] = None) -> None:
+def unzip_all(src: list[str], to: str, info: typing.Optional[system.sysinfo_base] = None) -> None:
     """
     解压全部native
     """

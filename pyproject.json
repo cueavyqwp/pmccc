@@ -2,7 +2,7 @@
     "project": {
         "name": "pmccc",
         "version": null,
-        "description": "A minecraft launcher core library for python",
+        "description": "A minecraft launcher library for python",
         "readme": "docs/README.md",
         "requires-python": ">=3.10",
         "keywords": [
@@ -28,7 +28,6 @@
             "Documentation": "https://github.com/cueavyqwp/pmccc/tree/main/docs"
         },
         "dependencies": [
-            "platformdirs",
             "requests",
             "psutil"
         ]

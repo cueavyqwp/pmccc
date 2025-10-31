@@ -7,7 +7,7 @@ __all__ = ["get_type", "hasher", "verify_hash"]
 import typing
 import os
 
-from .types import HASH_TYPE, HASHER
+from ..types import HASH_TYPE, HASHER
 
 
 def get_type(value: str) -> HASH_TYPE:

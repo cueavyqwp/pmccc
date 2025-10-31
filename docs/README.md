@@ -13,9 +13,12 @@
 
 # 关于
 
-这是一个基于`python`的`Minecraft`启动器核心
+这是一个基于`python`的`Minecraft`启动器库
 
 # 示例
+
+> [!WARNING]
+> **已过时**
 
 ## 启动器信息
 

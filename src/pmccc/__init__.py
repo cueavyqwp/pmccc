@@ -2,18 +2,9 @@
 pmccc
 """
 
-from .launcher import *
-from .verify import *
-from .info import *
-from .java import *
-
-from .version import *
-from .native import *
-from .player import *
-from .rules import *
-from .name import *
+from . import client  # type: ignore
+from . import utils  # type: ignore
+from . import lib  # type: ignore
 
 from .pmccc import *
-from .misc import *
-
 from .types import *

@@ -9,8 +9,8 @@ import typing
 import re
 import os
 
-from . import info as _info
-from .types import PmcccJavaNotFoundError
+from . import system
+from ..types import PmcccJavaNotFoundError
 
 
 def select_java(version: int = 8, available: typing.Optional[list[int] | tuple[int]] = None) -> list[int]:
@@ -72,8 +72,8 @@ class java_manager:
     Java管理器
     """
 
-    def __init__(self, path: typing.Optional[list[str]] = None, info: typing.Optional[_info] = None, selector: typing.Callable[[int, list[int]], list[int]] = select_java) -> None:
-        self.info = _info() if info is None else info
+    def __init__(self, path: typing.Optional[list[str]] = None, info: typing.Optional[system.sysinfo_base] = None, selector: typing.Callable[[int, list[int]], list[int]] = select_java) -> None:
+        self.info = system.sysinfo_base() if info is None else info
         self.java: dict[int, list[java_info]] = {}
         self.selector = selector
         [self.add(value) for item in path if (
