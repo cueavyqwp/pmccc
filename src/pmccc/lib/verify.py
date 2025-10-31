@@ -29,10 +29,7 @@ class hasher:
         return self.hexdigest
 
     def load_dir(self, path: str, filter: typing.Optional[str] = None) -> str:
-        for file in sorted(os.listdir(path)):
-            file = os.path.join(path, file)
-            if os.path.isdir(file) or (filter is not None and filter not in file):
-                continue
+        for file in sorted((value for value in (os.path.join(path, item) for item in os.listdir(path)) if os.path.isfile(value) and (filter is None or filter in value))):
             self.load(file)
         return self.hexdigest
 
