@@ -5,6 +5,3 @@
 from .system import *
 from .verify import *
 from .java import *
-
-
-print("a")

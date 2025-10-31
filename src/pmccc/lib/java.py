@@ -5,6 +5,7 @@
 __all__ = ["java_info", "java_manager"]
 
 import subprocess
+import threading
 import typing
 import re
 import os
@@ -42,7 +43,7 @@ class java_info:
 
         path: javaw/java程序
         """
-        self.path = os.path.normpath(path)
+        self.path = os.path.normpath(os.path.abspath(path))
         self.version = version
         self.arch = arch
         self.jdk = jdk
@@ -64,7 +65,7 @@ class java_info:
         return f"{'jdk' if self.jdk else 'jre'}({self.version})[{self.arch}] <{self.path}>"
 
     def __hash__(self) -> int:
-        return str(self).__hash__()
+        return os.path.dirname(self.path).__hash__()
 
 
 class java_manager:
@@ -75,6 +76,7 @@ class java_manager:
     def __init__(self, path: typing.Optional[list[str]] = None, info: typing.Optional[system.sysinfo_base] = None, selector: typing.Callable[[int, list[int]], list[int]] = select_java) -> None:
         self.info = system.sysinfo_base() if info is None else info
         self.java: dict[int, list[java_info]] = {}
+        self.loaded: list[int] = []
         self.selector = selector
         [self.add(value) for item in path if (
             value := self.check_java(item))] if path else None
@@ -92,12 +94,19 @@ class java_manager:
         把Java信息加入管理器
         """
         # 不加载位数不匹配的jre/jdk
-        if java.arch and java.arch != self.info.arch:
+        if java.arch and java.arch != self.info.arch or hash(java) in self.loaded:
             return
         if java.major not in self.java:
             self.java[java.major] = [java]
         else:
             self.java[java.major].append(java)
+        self.loaded.append(hash(java))
+
+    def add_path(self, path: str) -> bool:
+        """
+        通过Java程序路径来进行添加
+        """
+        return self.add(info) is None if (info := self.check_java(path)) else False
 
     def check_java(self, path: str) -> java_info | None:
         """
@@ -138,20 +147,23 @@ class java_manager:
 
         默认通过环境变量来找
         """
+        threads: list[threading.Thread] = []
         if dirs is None:
             dirs = os.environ["PATH"].split(self.info.split)
-        # 防止重复加载
-        loaded: set[int] = set()
         for path in dirs:
             if not os.path.isdir(path):
                 continue
             if "bin" not in path and "bin" in os.listdir(path):
                 path = os.path.join(path, "bin")
-            if (ret := self.check_java(path)):
-                if (hash := ret.__hash__()) in loaded:
-                    continue
-                self.add(ret)
-                loaded.add(hash)
+
+            def func():
+                if (ret := self.check_java(path)):
+                    self.add(ret)
+            # 多线程查找
+            threads.append(threading.Thread(target=func, daemon=True))
+            threads[-1].start()
+        for thread in threads:
+            thread.join()
 
     def select_java(self, target: int | str) -> list[str]:
         """
