@@ -13,9 +13,9 @@ from ..lib import system
 from ..lib import java as _java
 from ..lib import path as _path
 
+from .launcher import launcher_info
 from . import namepath as _name
 from . import player as _player
-from . import launcher
 from . import rules
 
 
@@ -154,7 +154,7 @@ class version:
         """
         return f"{self.info.split.join([*library, jar])}"
 
-    def replace_args(self,  launcher_info: launcher.launcher_info, java: str | _java.java_manager, args: list[str], class_path: str, player: _player.player_base, game_directory: str, assets_directory: str, natives_directory: str, replacement: typing.Optional[dict[str, typing.Any]] = None, force_utf8: bool = True) -> list[typing.Any]:
+    def replace_args(self,  launcher_info: launcher_info, java: str | _java.java_manager, args: list[str], class_path: str, player: _player.player_base, game_directory: str, assets_directory: str, natives_directory: str, replacement: typing.Optional[dict[str, typing.Any]] = None, force_utf8: bool = True) -> list[typing.Any]:
         """
         替换模板,获得完整的启动参数
         """
@@ -253,7 +253,7 @@ class version_manager:
             data = json.load(fp)
         self.version = version(data, self.info)
 
-    def get_args(self,  launcher_info: launcher.launcher_info, java: str | _java.java_manager, player: _player.player_base, assets_directory: str, libraries_directory: str, custom_jvm: typing.Optional[list[str]] = None, custom_game: typing.Optional[list[str]] = None, main_class: str | None = None, replacement: typing.Optional[dict[str, typing.Any]] = None, force_utf8: bool = True) -> list[typing.Any]:
+    def get_args(self,  launcher_info: launcher_info, java: str | _java.java_manager, player: _player.player_base, assets_directory: str, libraries_directory: str, custom_jvm: typing.Optional[list[str]] = None, custom_game: typing.Optional[list[str]] = None, main_class: str | None = None, replacement: typing.Optional[dict[str, typing.Any]] = None, force_utf8: bool = True) -> list[typing.Any]:
         jvm, game = self.version.get_args()
         if custom_jvm is not None:
             jvm = custom_jvm + jvm
