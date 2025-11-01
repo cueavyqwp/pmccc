@@ -1,5 +1,5 @@
 """
-寻找java以及相关处理
+寻找Java以及相关处理
 """
 
 __all__ = ["java_info", "java_manager"]
@@ -11,6 +11,7 @@ import re
 import os
 
 from . import system
+from . import config
 from .verify import to_hash
 from ..types import PmcccJavaNotFoundError
 
@@ -69,7 +70,7 @@ class java_info:
         return to_hash(os.path.dirname(self.path))
 
 
-class java_manager:
+class java_manager(config.config_base):
     """
     Java管理器
     """
@@ -81,6 +82,23 @@ class java_manager:
         self.selector = selector
         [self.add(value) for item in path if (
             value := self.check_java(item))] if path else None
+
+    def config_export(self) -> dict[str, typing.Any]:
+        return {str(key): [{
+            "path": value.path,
+            "version": value.version,
+            "arch": value.arch,
+            "jdk": value.jdk
+        } for value in item] for key, item in self.java.items()}
+
+    def config_loads(self, data: dict[str, typing.Any]) -> None:
+        for key, item in data.items():
+            key = int(key)
+            if key not in self.java:
+                self.java[key] = []
+            for value in item:
+                self.add(
+                    java_info(value["path"], value["version"], value["arch"], value["jdk"]))
 
     def __str__(self) -> str:
         ret: list[str] = []
