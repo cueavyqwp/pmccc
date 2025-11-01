@@ -2,6 +2,8 @@
 启动器相关内容
 """
 
+from __future__ import annotations
+
 __all__ = ["launcher_info"]
 
 from .player import player_manager

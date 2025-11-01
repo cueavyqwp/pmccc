@@ -2,6 +2,8 @@
 处理版本文件相关
 """
 
+from __future__ import annotations
+
 __all__ = ["version", "version_manager"]
 
 import typing
