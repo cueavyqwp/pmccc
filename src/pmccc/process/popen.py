@@ -8,7 +8,7 @@ import subprocess
 import threading
 import typing
 
-from . import log4j2 as _log4j2
+from .log4j2 import log4j2 as _log4j2
 
 
 class popen(subprocess.Popen[str]):

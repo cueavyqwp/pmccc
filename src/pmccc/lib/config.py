@@ -35,7 +35,7 @@ class config_base:
         """
         从字典中加载配置
         """
-        for name, value in data:
+        for name, value in data.items():
             setattr(self, name, value)
 
     def config_load(self, path: str) -> None:
