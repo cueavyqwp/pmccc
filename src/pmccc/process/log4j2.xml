@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="SysOut" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{yyyy/MM/dd HH:mm:ss}][%level][%t]: %msg{nolookups}%n" />
+        </Console>
+        <RollingRandomAccessFile name="File" fileName="logs/latest.log" filePattern="logs/%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="[%d{yyyy/MM/dd HH:mm:ss}][%level][%t]: %msg{nolookups}%n" />
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <OnStartupTriggeringPolicy />
+            </Policies>
+        </RollingRandomAccessFile>
+        <!-- 把命令行中的日志转发给图形界面 -->
+        <Queue name="ServerGuiConsole">
+            <AppenderRef ref="SysOut" />
+        </Queue>
+        <Listener name="Tracy">
+            <PatternLayout pattern="(%F:%L): %msg{nolookups}%n" />
+        </Listener>
+    </Appenders>
+    <Loggers>
+        <Root level="info">
+            <filters>
+                <MarkerFilter marker="NETWORK_PACKETS" onMatch="DENY" onMismatch="NEUTRAL" />
+            </filters>
+            <AppenderRef ref="SysOut"/>
+            <AppenderRef ref="File"/>
+            <AppenderRef ref="ServerGuiConsole"/>
+            <AppenderRef ref="Tracy"/>
+        </Root>
+    </Loggers>
+</Configuration>

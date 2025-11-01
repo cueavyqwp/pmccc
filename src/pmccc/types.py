@@ -59,6 +59,31 @@ SKIN_DEFAULT = [
     SKIN_DEFAULT_TYPE.ZURI
 ]
 
+# 日志等级
+
+
+class LOG_LEVEL_TYPE(enum.Enum):
+    OFF = 0
+    FATAL = 1
+    ERROR = 2
+    WARN = 3
+    INFO = 4
+    DEBUG = 5
+    TRACE = 6
+    ALL = 7
+
+
+LOG_LEVEL = {
+    "OFF": LOG_LEVEL_TYPE.OFF,
+    "FATAL": LOG_LEVEL_TYPE.FATAL,
+    "ERROR": LOG_LEVEL_TYPE.ERROR,
+    "WARN": LOG_LEVEL_TYPE.WARN,
+    "INFO": LOG_LEVEL_TYPE.INFO,
+    "DEBUG": LOG_LEVEL_TYPE.DEBUG,
+    "TRACE": LOG_LEVEL_TYPE.TRACE,
+    "ALL": LOG_LEVEL_TYPE.ALL
+}
+
 # 自定义异常
 
 
@@ -88,4 +113,4 @@ class PmcccJavaNotFoundError(PmcccException):
     """
     Java未找到异常
     """
-    ...
+    pass

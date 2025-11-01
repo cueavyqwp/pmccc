@@ -12,9 +12,6 @@ __all__ = ["config_base"]
 
 class config_base:
 
-    def __init__(self) -> None:
-        ...
-
     def config_export(self) -> dict[str, typing.Any]:
         """
         导出为可被json序列化的字典

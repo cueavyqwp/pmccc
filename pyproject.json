@@ -36,6 +36,11 @@
         "setuptools": {
             "package-dir": {
                 "": "src"
+            },
+            "package-data": {
+                "pmccc": [
+                    "*/log4j2.xml"
+                ]
             }
         }
     },

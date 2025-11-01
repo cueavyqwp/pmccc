@@ -5,7 +5,6 @@
 __all__ = ["version"]
 
 import typing
-import os
 import re
 
 from ..lib import verify
@@ -153,7 +152,7 @@ class version:
         """
         return f"{self.info.split.join([*library, jar])}"
 
-    def replace_args(self,  launcher_info: launcher.launcher_info, java: str | _java.java_manager, args: list[str], class_path: str, player: _player.player_base, game_directory: str, assets_directory: str, natives_directory: str, replacement: typing.Optional[dict[str, typing.Any]] = None, log4j2: str | bool = True, force_utf8: bool = True) -> list[typing.Any]:
+    def replace_args(self,  launcher_info: launcher.launcher_info, java: str | _java.java_manager, args: list[str], class_path: str, player: _player.player_base, game_directory: str, assets_directory: str, natives_directory: str, replacement: typing.Optional[dict[str, typing.Any]] = None, force_utf8: bool = True) -> list[typing.Any]:
         """
         替换模板,获得完整的启动参数
         """
@@ -186,11 +185,4 @@ class version:
                 if key in data:
                     item = item.replace(key, data[key])
             ret.append(item)
-        if "logging" in self.data and log4j2:
-            if isinstance(log4j2, bool):
-                log4j2 = path if os.path.isfile(path := os.path.join(
-                    game_directory, "log4j2.xml")) else False
-            if log4j2:
-                ret.insert(1, self.data["logging"]["client"]
-                           ["argument"].replace("${path}", log4j2))
         return ret

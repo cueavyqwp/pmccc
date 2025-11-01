@@ -6,6 +6,7 @@ __all__ = ["launcher_info"]
 
 from ..pmccc import __version__
 from ..lib import system
+from ..lib import config
 
 import typing
 
@@ -24,12 +25,13 @@ class launcher_info:
         self.version = version
 
 
-class lanucher_config:
+class lanucher_config(config.config_base):
     """
     启动器配置
     """
 
-    ...
+    def __init__(self) -> None:
+        pass
 
 
 class launcher(launcher_info):
