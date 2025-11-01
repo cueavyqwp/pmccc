@@ -2,8 +2,9 @@
 校验相关
 """
 
-__all__ = ["get_type", "hasher", "verify_hash"]
+__all__ = ["get_type", "to_hash", "hasher", "verify_hash"]
 
+import hashlib
 import typing
 import os
 
@@ -12,6 +13,13 @@ from ..types import HASH_TYPE, HASHER
 
 def get_type(value: str) -> HASH_TYPE:
     return {32: HASH_TYPE.MD5, 40: HASH_TYPE.SHA1, 64: HASH_TYPE.SHA256, 128: HASH_TYPE.SHA512}[len(value)]
+
+
+def to_hash(obj: typing.Any) -> int:
+    """
+    把传入类型转为字符串然后返回字符串对应sha1
+    """
+    return int(hashlib.sha1(str(obj).encode("utf-8")).hexdigest(), 16)
 
 
 class hasher:

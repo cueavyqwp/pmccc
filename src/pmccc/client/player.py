@@ -2,31 +2,59 @@
 玩家相关
 """
 
-__all__ = ["player_base", "player_offline", "player_online"]
+__all__ = ["player_base", "player_offline",
+           "player_online", "player_type", "player_manager"]
 
+import time
 import typing
 import hashlib
 import urllib.parse
 import uuid as _uuid
 
 from ..types import SKIN_DEFAULT_TYPE, SKIN_ARM_TYPE, SKIN_DEFAULT,  PmcccResponseError
+from ..lib import config
+from ..lib.verify import to_hash
 
 import requests
 
 
-class player_base:
+class player_base(config.config_base):
     """
     玩家基类
     """
 
     def __init__(self) -> None:
+        """
+        注: 若需初始化,请覆写init而不是这里
+        """
         self.name = "Dev"
         self.uuid = "0123456789abcdef0123456789abcdef"
         self.access_token = self.uuid
+        self.manager_type = "custom"
         self.type = "Legacy"
+
+    def init(self) -> None:
+        """
+        player_manager会调用此函数来进一步初始化
+        """
+        pass
 
     def __str__(self) -> str:
         return f"[{self.name}] <{self.uuid}> ({self.type})"
+
+    def __hash__(self) -> int:
+        return to_hash(str(self))
+
+    def config_export(self) -> dict[str, typing.Any]:
+        return {
+            "type": self.manager_type,
+            "name": self.name,
+            "uuid": self.uuid
+        }
+
+    def config_loads(self, data: dict[str, typing.Any]) -> None:
+        self.name = data["name"]
+        self.access_token = self.uuid = data["uuid"]
 
     @property
     def ready(self) -> bool:
@@ -68,10 +96,20 @@ class player_offline(player_base):
     离线模式
     """
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str = "Dev") -> None:
         self.name = name
         self.type = "Legacy"
+        self.manager_type = "offline"
         self.uuid
+
+    def config_export(self) -> dict[str, typing.Any]:
+        return {
+            "type": self.manager_type,
+            "name": self.name
+        }
+
+    def config_loads(self, data: dict[str, typing.Any]) -> None:
+        self.name = data["name"]
 
     @property
     def uuid(self) -> str:
@@ -106,11 +144,27 @@ class player_online(player_base):
 
     """
 
-    def __init__(self, microsoft_refresh_token: typing.Optional[str] = None):
+    def __init__(self, microsoft_refresh_token: typing.Optional[str] = None, lastuse: int = -1):
         self.microsoft_refresh_token = microsoft_refresh_token
         self.access_token: typing.Optional[str] = None
         self.profile: dict[str, typing.Any] = {}
+        self.lastuse = lastuse
+        self.manager_type = "msa"
         self.type = "msa"
+
+    def init(self) -> None:
+        self.login_auto()
+
+    def config_export(self) -> dict[str, typing.Any]:
+        return {
+            "type": self.manager_type,
+            "refresh_token": self.microsoft_refresh_token,
+            "lastuse": self.lastuse
+        }
+
+    def config_loads(self, data: dict[str, typing.Any]) -> None:
+        self.microsoft_refresh_token = str(data["refresh_token"])
+        self.lastuse = int(data["lastuse"])
 
     @property
     def name(self) -> str:
@@ -202,12 +256,17 @@ class player_online(player_base):
         """
         microsoft_token, microsoft_refresh_token = self.login_token_microsoft(
             url)
+        self.lastuse = int(time.time())
         xbox_live_token = self.login_token_xbox_live(microsoft_token)
         xsts_userhash, xsts_token = self.login_token_xsts(xbox_live_token)
         minecraft_token = self.login_token_minecraft(xsts_userhash, xsts_token)
-        self.get_profile(minecraft_token)
         self.access_token = minecraft_token
         self.microsoft_refresh_token = microsoft_refresh_token
+        # 只要token能拿到就行,能不能更新档案不重要
+        try:
+            self.refresh_profile()
+        except PmcccResponseError:
+            pass
         return microsoft_refresh_token
 
     def login_auto(self, microsoft_refresh_token: typing.Optional[str] = None) -> bool:
@@ -222,8 +281,12 @@ class player_online(player_base):
         xbox_live_token = self.login_token_xbox_live(microsoft_token)
         xsts_userhash, xsts_token = self.login_token_xsts(xbox_live_token)
         minecraft_token = self.login_token_minecraft(xsts_userhash, xsts_token)
-        self.get_profile(minecraft_token)
         self.access_token = minecraft_token
+        # 只要token能拿到就行,能不能更新档案不重要
+        try:
+            self.refresh_profile()
+        except PmcccResponseError:
+            pass
         return True
 
     def refresh_token(self, microsoft_refresh_token: str) -> str:
@@ -238,6 +301,7 @@ class player_online(player_base):
         })
         if not response.ok:
             raise PmcccResponseError(response)
+        self.lastuse = int(time.time())
         data = response.json()
         return data["access_token"]
 
@@ -261,3 +325,103 @@ class player_online(player_base):
         self.profile = {} if self.access_token is None else self.get_profile(
             self.access_token)
         return self.ready
+
+
+class player_type:
+
+    def __init__(self, **kwargs: type[player_base]) -> None:
+        self.types: dict[str, type[player_base]] = {
+            "custom": player_base,
+            "offline": player_offline,
+            "msa": player_online
+        }
+        for key, types in kwargs.items():
+            self.add_type(key, types)
+
+    def add_type(self, name: str, types: type[player_base]) -> None:
+        """
+        添加玩家类型
+        """
+        self.types[name] = types
+
+    def get_type(self, name: str) -> type[player_base]:
+        return self.types[name]
+
+
+class player_manager(config.config_base):
+    """
+    管理玩家档案
+    """
+
+    def __init__(self, data: typing.Optional[dict[str, typing.Any]] = None, types: typing.Optional[player_type] = None) -> None:
+        self.player: dict[int, player_base] = {}
+        self.types = player_type() if types is None else types
+        if data is not None:
+            self.config_loads(data)
+
+    def __getitem__(self, index: int) -> player_base:
+        return self.get_player(index)
+
+    def __setitem__(self, types: str, args: tuple[typing.Any, ...] | list[typing.Any]) -> None:
+        self.add_player(types, *args)
+
+    def __delitem__(self, index: int) -> None:
+        self.remove_player(index)
+
+    def config_export(self) -> dict[str, typing.Any]:
+        return {str(key): value.config_export() for key, value in self.player.items()}
+
+    def config_loads(self, data: dict[str, typing.Any]) -> None:
+        for key, value in data.items():
+            player = self.types.get_type(value["type"])()
+            player.config_loads(value)
+            player.init()
+            self.player[int(key)] = player
+
+    def add_player(self, types: str, *args: typing.Any, **kwargs: typing.Any) -> int:
+        """
+        添加玩家,返回其对应self.player的索引
+
+        types: 玩家类型(manager_type)
+        """
+        player = self.types.get_type(types)(*args, **kwargs)
+        player.init()
+        index = hash(player)
+        self.player[index] = player
+        return index
+
+    def get_player(self, index: int) -> player_base:
+        """
+        获取玩家
+        """
+        return self.player[index]
+
+    def remove_player(self, index: int) -> None:
+        """
+        移除玩家
+        """
+        del self.player[index]
+
+    def find_player_name(self, name: str, max_find: int = -1) -> list[player_base]:
+        """
+        通过玩家名寻找玩家
+        """
+        ret: list[player_base] = []
+        for player in self.player.values():
+            if max_find >= 0 and len(ret) >= max_find:
+                break
+            if player.name == name:
+                ret.append(player)
+        return ret
+
+    def find_player_uuid(self, uuid: str, max_find: int = -1) -> list[player_base]:
+        """
+        通过uuid寻找玩家
+        """
+        ret: list[player_base] = []
+        for player in self.player.values():
+            if max_find >= 0 and len(ret) >= max_find:
+                break
+            if player.uuid == uuid:
+                ret.append(player)
+        return ret

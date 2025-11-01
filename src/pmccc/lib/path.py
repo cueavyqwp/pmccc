@@ -11,7 +11,7 @@ def check_dir(path: str, mkdir: bool = True) -> bool:
     """
     检查路径所在文件夹是否存在并创建文件夹
     """
-    dirname = os.path.dirname(path)
+    dirname = os.path.dirname(os.path.abspath(path))
     # 不考虑dirname指向文件的情况
     if os.path.isdir(dirname):
         return True

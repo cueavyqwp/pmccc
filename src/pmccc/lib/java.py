@@ -11,6 +11,7 @@ import re
 import os
 
 from . import system
+from .verify import to_hash
 from ..types import PmcccJavaNotFoundError
 
 
@@ -65,7 +66,7 @@ class java_info:
         return f"{'jdk' if self.jdk else 'jre'}({self.version})[{self.arch}] <{self.path}>"
 
     def __hash__(self) -> int:
-        return os.path.dirname(self.path).__hash__()
+        return to_hash(os.path.dirname(self.path))
 
 
 class java_manager:
