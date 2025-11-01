@@ -4,7 +4,6 @@
 
 __all__ = ["launcher_info"]
 
-from .minecraft import minecraft_manager
 from .player import player_manager
 
 from ..pmccc import __version__
@@ -14,6 +13,9 @@ from ..lib import java
 from .. import process
 
 import typing
+
+if typing.TYPE_CHECKING:
+    from .minecraft import minecraft_manager
 
 
 class launcher_info:

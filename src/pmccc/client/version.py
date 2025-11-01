@@ -13,10 +13,12 @@ from ..lib import system
 from ..lib import java as _java
 from ..lib import path as _path
 
-from .launcher import launcher_info
 from . import namepath as _name
 from . import player as _player
 from . import rules
+
+if typing.TYPE_CHECKING:
+    from .launcher import launcher_info
 
 
 class version:
