@@ -2,7 +2,7 @@
 native相关处理
 """
 
-__all__ = ["unzip", "clear", "unzip_all"]
+__all__ = ["unzip", "unzip_all"]
 
 import os
 import typing
@@ -10,6 +10,7 @@ import shutil
 import zipfile
 
 from ..lib import system
+from ..lib import path as _path
 
 
 def unzip(src: str, to: str, info: typing.Optional[system.sysinfo_base] = None) -> None:
@@ -18,8 +19,7 @@ def unzip(src: str, to: str, info: typing.Optional[system.sysinfo_base] = None) 
     """
     if info is None:
         info = system.sysinfo_base()
-    if not os.path.isdir(to):
-        os.makedirs(to)
+    _path.check_dir(to)
     with zipfile.ZipFile(src) as zp:
         for zipinfo in zp.filelist:
             name = os.path.basename(zipinfo.filename)
@@ -27,20 +27,6 @@ def unzip(src: str, to: str, info: typing.Optional[system.sysinfo_base] = None) 
                 with zp.open(zipinfo) as fps:
                     with open(os.path.join(to, name), "wb") as fpt:
                         shutil.copyfileobj(fps, fpt)
-
-
-def clear(src: str) -> None:
-    """
-    清理文件夹下所有文件
-    """
-    if os.path.isfile(src):
-        return
-    for name in os.listdir(src):
-        path = os.path.join(src, name)
-        if os.path.isdir(path):
-            shutil.rmtree(path)
-        else:
-            os.remove(path)
 
 
 def unzip_all(src: list[str], to: str, info: typing.Optional[system.sysinfo_base] = None) -> None:

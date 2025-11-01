@@ -12,6 +12,7 @@ import os
 
 from . import system
 from . import config
+from . import path as _path
 from .verify import to_hash
 from ..types import PmcccJavaNotFoundError
 
@@ -45,7 +46,7 @@ class java_info:
 
         path: javaw/java程序
         """
-        self.path = os.path.normpath(os.path.abspath(path))
+        self.path = _path.format_abspath(path)
         self.version = version
         self.arch = arch
         self.jdk = jdk

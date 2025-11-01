@@ -49,6 +49,6 @@ class config_base:
         """
         保存配置文件
         """
-        _path.check_dir(path)
+        _path.check_dir(path, parent=True)
         with open(path, "w", encoding="utf-8") as fp:
             json.dump(self.config_export(), fp, indent=4, ensure_ascii=False)

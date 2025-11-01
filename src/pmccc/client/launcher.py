@@ -4,9 +4,14 @@
 
 __all__ = ["launcher_info"]
 
+from .minecraft import minecraft_manager
+from .player import player_manager
+
 from ..pmccc import __version__
 from ..lib import system
 from ..lib import config
+from ..lib import java
+from .. import process
 
 import typing
 
@@ -30,15 +35,46 @@ class lanucher_config(config.config_base):
     启动器配置
     """
 
-    def __init__(self) -> None:
+    def config_export(self) -> dict[str, typing.Any]:
+        return {}
+
+    def config_loads(self, data: dict[str, typing.Any]) -> None:
         pass
 
 
-class launcher(launcher_info):
+class launcher:
     """
     启动器主类
     """
 
     def __init__(self, name: str | None = None, version: str | None = None) -> None:
-        super().__init__(name, version)
-        self.info = system.sysinfo()
+        self.info = launcher_info(name, version)
+        self.player = player_manager()
+        self.sysinfo = system.sysinfo()
+        self.java = java.java_manager()
+
+    def search_java(self, dirs: list[str] | None = None) -> None:
+        """
+        寻找Java,默认从环境变量中找
+        """
+        self.java.search(dirs)
+
+    def launch(self, minecraft: minecraft_manager, version_name: str, player: int, custom_jvm: list[str] | None = None, custom_game: list[str] | None = None, main_class: str | None = None, replacement: dict[str, typing.Any] | None = None, force_utf8: bool = True, log4j2: process.log4j2 | None = None, ignore_parse_error: bool = True) -> process.popen:
+        version = minecraft.version_get(version_name)
+        return process.popen(
+            version.get_args(
+                self.info,
+                self.java,
+                self.player.get_player(player),
+                minecraft.path_assets,
+                minecraft.path_libraries,
+                custom_jvm,
+                custom_game,
+                main_class,
+                replacement,
+                force_utf8
+            ),
+            version.dirname,
+            log4j2,
+            ignore_parse_error
+        )

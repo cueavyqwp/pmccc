@@ -2,14 +2,16 @@
 处理版本文件相关
 """
 
-__all__ = ["version"]
+__all__ = ["version", "version_manager"]
 
 import typing
+import json
+import os
 import re
 
-from ..lib import verify
 from ..lib import system
 from ..lib import java as _java
+from ..lib import path as _path
 
 from . import namepath as _name
 from . import player as _player
@@ -186,3 +188,87 @@ class version:
                     item = item.replace(key, data[key])
             ret.append(item)
         return ret
+
+
+class version_manager:
+    """
+    版本管理器
+    """
+
+    def __init__(self, file: str, info: typing.Optional[system.sysinfo_base] = None) -> None:
+        self.info = system.sysinfo_base() if info is None else info
+        self.version: version
+        self.file = _path.format_abspath(file)
+        self.reload()
+
+    @property
+    def filename(self) -> str:
+        return os.path.basename(self.file)
+
+    @property
+    def jarfile(self) -> str:
+        return os.path.join(self.dirname, os.path.splitext(self.filename)[0] + ".jar")
+
+    @property
+    def nativename(self) -> str:
+        return os.path.splitext(self.filename)[0] + "-natives"
+
+    @property
+    def native(self) -> str:
+        return os.path.join(self.dirname, self.nativename)
+
+    @property
+    def dirname(self) -> str:
+        return os.path.dirname(self.file)
+
+    @property
+    def name(self) -> str:
+        return self.version.data["id"]
+
+    def save(self) -> None:
+        with open(self.file, "w", encoding="utf-8") as fp:
+            json.dump(self.version.data, fp, indent=4, ensure_ascii=False)
+
+    def rename(self, name: str, check: bool = True) -> bool:
+        """
+        重命名版本文件夹,版本json与版本jar
+        """
+        if check and not _path.valid_filename(name) or not _path.check_removeable(self.dirname):
+            return False
+        self.version.rename(name)
+        self.save()
+        oldir = self.dirname
+        nativename = self.nativename
+        os.rename(self.file, os.path.join(self.dirname, f"{name}.json"))
+        os.rename(self.jarfile, os.path.join(self.dirname, f"{name}.jar"))
+        self.file = os.path.join(os.path.dirname(
+            self.dirname), name, f"{name}.json")
+        os.rename(oldir, self.dirname)
+        if os.path.isdir((native := os.path.join(self.dirname, nativename))):
+            os.rename(native, self.native)
+        return True
+
+    def reload(self) -> None:
+        with open(self.file, "r", encoding="utf-8") as fp:
+            data = json.load(fp)
+        self.version = version(data, self.info)
+
+    def get_args(self,  launcher_info: launcher.launcher_info, java: str | _java.java_manager, player: _player.player_base, assets_directory: str, libraries_directory: str, custom_jvm: typing.Optional[list[str]] = None, custom_game: typing.Optional[list[str]] = None, main_class: str | None = None, replacement: typing.Optional[dict[str, typing.Any]] = None, force_utf8: bool = True) -> list[typing.Any]:
+        jvm, game = self.version.get_args()
+        if custom_jvm is not None:
+            jvm = custom_jvm + jvm
+        if custom_game is not None:
+            game = custom_game + game
+        return self.version.replace_args(
+            launcher_info,
+            java,
+            self.version.merge_args(jvm, game, main_class),
+            self.version.merge_cp([os.path.join(libraries_directory, value)
+                                   for value in self.version.get_library()], self.jarfile),
+            player,
+            self.dirname,
+            assets_directory,
+            self.native,
+            replacement,
+            force_utf8
+        )
