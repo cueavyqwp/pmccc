@@ -44,4 +44,7 @@ class log4j2:
         return self.info(head), text
 
     def parse(self, line: str) -> None:
-        pass
+        """
+        可以通过覆写自定义解析
+        """
+        print(line, end="")

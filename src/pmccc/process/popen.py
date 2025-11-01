@@ -28,7 +28,7 @@ class popen(subprocess.Popen[str]):
                     cwd = str(args[index+1])
                     break
         super().__init__(args, stdin=subprocess.PIPE, stderr=subprocess.STDOUT,
-                         stdout=subprocess.PIPE,  encoding="utf-8", text=True, cwd=cwd)
+                         stdout=None if log4j2 is None else subprocess.PIPE,  encoding="utf-8", text=True, cwd=cwd)
         self.parse_thread = threading.Thread(
             target=self.parse, daemon=True)
         self.parse_thread.start()

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 __all__ = ["launcher_info"]
 
-from .player import player_manager
+from .player import player_base, player_manager
 
 from ..pmccc import __version__
 from ..lib import system
@@ -18,6 +18,7 @@ import typing
 
 if typing.TYPE_CHECKING:
     from .minecraft import minecraft_manager
+    from .version import version_manager
 
 
 class launcher_info:
@@ -63,15 +64,27 @@ class launcher:
         """
         self.java.search(dirs)
 
+    def get_args(self, minecraft: minecraft_manager, version: version_manager, player: player_base, custom_jvm: list[str] | None = None, custom_game: list[str] | None = None, main_class: str | None = None, replacement: dict[str, typing.Any] | None = None, force_utf8: bool = True) -> list[typing.Any]:
+        return version.get_args(
+            self.info,
+            self.java,
+            player,
+            minecraft.path_assets,
+            minecraft.path_libraries,
+            custom_jvm,
+            custom_game,
+            main_class,
+            replacement,
+            force_utf8
+        )
+
     def launch(self, minecraft: minecraft_manager, version_name: str, player: int, custom_jvm: list[str] | None = None, custom_game: list[str] | None = None, main_class: str | None = None, replacement: dict[str, typing.Any] | None = None, force_utf8: bool = True, log4j2: process.log4j2 | None = None, ignore_parse_error: bool = True) -> process.popen:
         version = minecraft.version_get(version_name)
         return process.popen(
-            version.get_args(
-                self.info,
-                self.java,
+            self.get_args(
+                minecraft,
+                version,
                 self.player.get_player(player),
-                minecraft.path_assets,
-                minecraft.path_libraries,
                 custom_jvm,
                 custom_game,
                 main_class,
