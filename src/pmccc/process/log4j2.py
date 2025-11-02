@@ -32,7 +32,7 @@ class log4j2:
 
     def is_line(self, text: str) -> bool:
         """
-        是否是新的一行
+        是否是可解析的一行
         """
         split = text.split(": ", 1)
         if len(split) < 2:

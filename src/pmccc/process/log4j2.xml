@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
     <Appenders>
-        <Console name="SysOut" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%d{yyyy/MM/dd HH:mm:ss}][%level][%t]: %msg{nolookups}%n" />
+        <Console name="SysOut" target="SYSTEM_OUT" immediateFlush="true">
+            <PatternLayout pattern="[%d{yyyy/MM/dd HH:mm:ss}][%level][%t]: %msg{nolookups}%n&#9;&#10;" />
         </Console>
         <RollingRandomAccessFile name="File" fileName="logs/latest.log" filePattern="logs/%d{yyyy-MM-dd}-%i.log.gz">
             <PatternLayout pattern="[%d{yyyy/MM/dd HH:mm:ss}][%level][%t]: %msg{nolookups}%n" />
