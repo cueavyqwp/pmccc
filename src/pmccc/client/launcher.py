@@ -9,7 +9,7 @@ __all__ = ["launcher_info"]
 from .player import player_base, player_manager
 
 from ..pmccc import __version__
-from ..lib import system
+from ..lib import sysinfo
 from ..lib import config
 from ..lib import java
 from .. import process
@@ -55,7 +55,7 @@ class launcher:
     def __init__(self, name: str | None = None, version: str | None = None) -> None:
         self.info = launcher_info(name, version)
         self.player = player_manager()
-        self.sysinfo = system.sysinfo()
+        self.sysinfo = sysinfo()
         self.java = java.java_manager()
 
     def search_java(self, dirs: list[str] | None = None) -> None:

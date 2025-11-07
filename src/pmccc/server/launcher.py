@@ -6,7 +6,7 @@ import typing
 import os
 
 from ..lib import java as _java
-from ..lib import system
+from ..lib import sysinfo
 from .. import process
 
 
@@ -16,7 +16,7 @@ class launcher:
         self.ignore_parse_error = ignore_parse_error
         self.args = [] if args is None else args
         self.java = _java.java_manager()
-        self.info = system.sysinfo()
+        self.info = sysinfo()
         self.log4j2 = log4j2
         self.cwd = cwd
 

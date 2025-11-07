@@ -10,7 +10,7 @@ import typing
 import re
 import os
 
-from . import system
+from . import sysinfo
 from . import config
 from . import path as _path
 from .verify import to_hash
@@ -76,8 +76,8 @@ class java_manager(config.config_base):
     Java管理器
     """
 
-    def __init__(self, path: typing.Optional[list[str]] = None, info: typing.Optional[system.sysinfo_base] = None, selector: typing.Callable[[int, list[int]], list[int]] = select_java) -> None:
-        self.info = system.sysinfo_base() if info is None else info
+    def __init__(self, path: typing.Optional[list[str]] = None, info: typing.Optional[sysinfo] = None, selector: typing.Callable[[int, list[int]], list[int]] = select_java) -> None:
+        self.info = sysinfo() if info is None else info
         self.java: dict[int, list[java_info]] = {}
         self.loaded: list[int] = []
         self.selector = selector

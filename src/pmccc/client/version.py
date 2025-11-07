@@ -11,7 +11,7 @@ import json
 import os
 import re
 
-from ..lib import system
+from ..lib import sysinfo
 from ..lib import java as _java
 from ..lib import path as _path
 
@@ -25,12 +25,12 @@ if typing.TYPE_CHECKING:
 
 class version:
 
-    def __init__(self, data: dict[str, typing.Any], info: typing.Optional[system.sysinfo_base] = None) -> None:
+    def __init__(self, data: dict[str, typing.Any], info: typing.Optional[sysinfo] = None) -> None:
         """
         data: 版本json文件
         """
         self.data = data
-        self.info = system.sysinfo_base() if info is None else info
+        self.info = sysinfo() if info is None else info
 
     def rename(self, id: str) -> tuple[tuple[str, str], tuple[str, str]]:
         """
@@ -199,8 +199,8 @@ class version_manager:
     版本管理器
     """
 
-    def __init__(self, file: str, info: typing.Optional[system.sysinfo_base] = None) -> None:
-        self.info = system.sysinfo_base() if info is None else info
+    def __init__(self, file: str, info: typing.Optional[sysinfo] = None) -> None:
+        self.info = sysinfo() if info is None else info
         self.version: version
         self.file = _path.format_abspath(file)
         self.reload()

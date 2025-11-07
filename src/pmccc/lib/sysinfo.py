@@ -2,7 +2,7 @@
 用于获取系统信息
 """
 
-__all__ = ["sysinfo_base"]
+__all__ = ["sysinfo"]
 
 import platform
 import typing
@@ -10,7 +10,7 @@ import typing
 import psutil
 
 
-class sysinfo_base:
+class sysinfo:
 
     def __init__(self) -> None:
         self.os: typing.Literal["windows", "linux", "osx"]
@@ -34,9 +34,6 @@ class sysinfo_base:
     @property
     def native(self) -> str:
         return {"windows": "dll", "linux": "so", "osx": "jnilib"}.get(self.os, "dll")
-
-
-class sysinfo(sysinfo_base):
 
     @property
     def memory_total(self) -> int:
