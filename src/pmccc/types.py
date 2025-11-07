@@ -24,7 +24,7 @@ HASHER = {
     HASH_TYPE.SHA1: hashlib.sha1,
     HASH_TYPE.SHA256: hashlib.sha256,
     HASH_TYPE.SHA512: hashlib.sha512,
-    HASH_TYPE.MD5: hashlib.md5
+    HASH_TYPE.MD5: hashlib.md5,
 }
 
 # 默认皮肤
@@ -56,7 +56,7 @@ SKIN_DEFAULT = [
     SKIN_DEFAULT_TYPE.NOOR,
     SKIN_DEFAULT_TYPE.STEVE,
     SKIN_DEFAULT_TYPE.SUNNY,
-    SKIN_DEFAULT_TYPE.ZURI
+    SKIN_DEFAULT_TYPE.ZURI,
 ]
 
 # 日志等级
@@ -81,7 +81,7 @@ LOG_LEVEL = {
     "INFO": LOG_LEVEL_TYPE.INFO,
     "DEBUG": LOG_LEVEL_TYPE.DEBUG,
     "TRACE": LOG_LEVEL_TYPE.TRACE,
-    "ALL": LOG_LEVEL_TYPE.ALL
+    "ALL": LOG_LEVEL_TYPE.ALL,
 }
 
 # 自定义异常
@@ -92,7 +92,9 @@ class PmcccException(Exception):
     pmccc异常基类
     """
 
-    def __init__(self, *args: tuple[typing.Any, ...], **kwargs: dict[str, typing.Any]) -> None:
+    def __init__(
+        self, *args: tuple[typing.Any, ...], **kwargs: dict[str, typing.Any]
+    ) -> None:
         """
         pmccc异常
         """
@@ -104,7 +106,12 @@ class PmcccResponseError(PmcccException):
     pmccc回应异常
     """
 
-    def __init__(self, response: requests.Response, *args: tuple[typing.Any, ...], **kwargs: dict[str, typing.Any]) -> None:
+    def __init__(
+        self,
+        response: requests.Response,
+        *args: tuple[typing.Any, ...],
+        **kwargs: dict[str, typing.Any],
+    ) -> None:
         self.response = response
         super().__init__(*args, **kwargs)
 
@@ -113,4 +120,5 @@ class PmcccJavaNotFoundError(PmcccException):
     """
     Java未找到异常
     """
+
     pass

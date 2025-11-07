@@ -2,6 +2,8 @@
 服务端启动类
 """
 
+__all__ = ["server_launcher"]
+
 import typing
 import os
 
@@ -10,9 +12,15 @@ from ..lib import sysinfo
 from .. import process
 
 
-class launcher:
+class server_launcher:
 
-    def __init__(self, cwd: str, args: typing.Optional[list[typing.Any]] = None, log4j2: typing.Optional[process.log4j2] = None, ignore_parse_error: bool = False) -> None:
+    def __init__(
+        self,
+        cwd: str,
+        args: list[typing.Any] | None = None,
+        log4j2: process.log4j2_base | None = None,
+        ignore_parse_error: bool = False,
+    ) -> None:
         self.ignore_parse_error = ignore_parse_error
         self.args = [] if args is None else args
         self.java = _java.java_manager()
@@ -26,7 +34,9 @@ class launcher:
         """
         self.java.search(dirs)
 
-    def launch(self, java: str | int | _java.java_info, eula: bool = False) -> process.popen:
+    def launch(
+        self, java: str | int | _java.java_info, eula: bool = False, output: bool = True
+    ) -> process.popen:
         if isinstance(java, int):
             java = self.java.java[java][0]
         if isinstance(java, _java.java_info):
@@ -38,6 +48,7 @@ class launcher:
         return process.popen(
             [java, *self.args],
             self.cwd,
-            self.log4j2,
-            self.ignore_parse_error
+            output=output,
+            log4j2=self.log4j2,
+            ignore_parse_error=self.ignore_parse_error,
         )

@@ -31,7 +31,11 @@ class minecraft_manager:
         return os.path.join(self.home, "versions")
 
     def version_list(self) -> dict[str, str]:
-        return {name: path for name in os.listdir(self.path_versions) if os.path.isdir(path := os.path.join(self.path_versions, name))}
+        return {
+            name: path
+            for name in os.listdir(self.path_versions)
+            if os.path.isdir(path := os.path.join(self.path_versions, name))
+        }
 
     def version_get(self, name: str) -> version_manager:
         return version_manager(os.path.join(self.path_versions, name, f"{name}.json"))

@@ -17,7 +17,9 @@ from .verify import to_hash
 from ..types import PmcccJavaNotFoundError
 
 
-def select_java(version: int = 8, available: typing.Optional[list[int] | tuple[int]] = None) -> list[int]:
+def select_java(
+    version: int = 8, available: list[int] | tuple[int, ...] | None = None
+) -> list[int]:
     """
     根据传入的Java版本返回可选的Java版本
     """
@@ -38,7 +40,13 @@ def select_java(version: int = 8, available: typing.Optional[list[int] | tuple[i
 
 class java_info:
 
-    def __init__(self, path: str, version: typing.Optional[str] = None, arch: typing.Optional[str] = None, jdk: bool = False):
+    def __init__(
+        self,
+        path: str,
+        version: str | None = None,
+        arch: str | None = None,
+        jdk: bool = False,
+    ):
         """
         Java版本信息
 
@@ -65,7 +73,9 @@ class java_info:
             return int(split[0])
 
     def __str__(self) -> str:
-        return f"{'jdk' if self.jdk else 'jre'}({self.version})[{self.arch}] <{self.path}>"
+        return (
+            f"{'jdk' if self.jdk else 'jre'}({self.version})[{self.arch}] <{self.path}>"
+        )
 
     def __hash__(self) -> int:
         return to_hash(os.path.dirname(self.path))
@@ -76,21 +86,35 @@ class java_manager(config.config_base):
     Java管理器
     """
 
-    def __init__(self, path: typing.Optional[list[str]] = None, info: typing.Optional[sysinfo] = None, selector: typing.Callable[[int, list[int]], list[int]] = select_java) -> None:
+    def __init__(
+        self,
+        path: list[str] | None = None,
+        info: sysinfo | None = None,
+        selector: typing.Callable[[int, list[int]], list[int]] = select_java,
+    ) -> None:
         self.info = sysinfo() if info is None else info
         self.java: dict[int, list[java_info]] = {}
         self.loaded: list[int] = []
         self.selector = selector
-        [self.add(value) for item in path if (
-            value := self.check_java(item))] if path else None
+        (
+            [self.add(value) for item in path if (value := self.check_java(item))]
+            if path
+            else None
+        )
 
     def config_export(self) -> dict[str, typing.Any]:
-        return {str(key): [{
-            "path": value.path,
-            "version": value.version,
-            "arch": value.arch,
-            "jdk": value.jdk
-        } for value in item] for key, item in self.java.items()}
+        return {
+            str(key): [
+                {
+                    "path": value.path,
+                    "version": value.version,
+                    "arch": value.arch,
+                    "jdk": value.jdk,
+                }
+                for value in item
+            ]
+            for key, item in self.java.items()
+        }
 
     def config_loads(self, data: dict[str, typing.Any]) -> None:
         for key, item in data.items():
@@ -99,7 +123,10 @@ class java_manager(config.config_base):
                 self.java[key] = []
             for value in item:
                 self.add(
-                    java_info(value["path"], value["version"], value["arch"], value["jdk"]))
+                    java_info(
+                        value["path"], value["version"], value["arch"], value["jdk"]
+                    )
+                )
 
     def __str__(self) -> str:
         ret: list[str] = []
@@ -152,16 +179,24 @@ class java_manager(config.config_base):
         if not target:
             return
         target = os.path.join(path, target)
-        text = subprocess.run((target, "-version"),
-                              capture_output=True, text=True).stderr
-        version = version.group(1) if (version := re.search(
-            "(?i)\\b(?:java|openjdk)\\s+(?:version\\s+)?\"?([0-9]+(?:\\.[0-9]+){0,2})", text)) else None
-        arch = arch.group(1) if (arch := re.search(
-            "(\\d{2})-Bit", text)) else None
+        text = subprocess.run(
+            (target, "-version"), capture_output=True, text=True
+        ).stderr
+        version = (
+            version.group(1)
+            if (
+                version := re.search(
+                    '(?i)\\b(?:java|openjdk)\\s+(?:version\\s+)?"?([0-9]+(?:\\.[0-9]+){0,2})',
+                    text,
+                )
+            )
+            else None
+        )
+        arch = arch.group(1) if (arch := re.search("(\\d{2})-Bit", text)) else None
         arch = "x86" if arch == "32" else f"x{arch}"
         return java_info(target, version, arch, jdk)
 
-    def search(self, dirs: typing.Optional[list[str]] = None) -> None:
+    def search(self, dirs: list[str] | None = None) -> None:
         """
         通过文件夹找Java(非遍历)
 
@@ -177,8 +212,9 @@ class java_manager(config.config_base):
                 path = os.path.join(path, "bin")
 
             def func():
-                if (ret := self.check_java(path)):
+                if ret := self.check_java(path):
                     self.add(ret)
+
             # 多线程查找
             threads.append(threading.Thread(target=func, daemon=True))
             threads[-1].start()

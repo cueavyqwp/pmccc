@@ -4,28 +4,33 @@
 
 from __future__ import annotations
 
-__all__ = ["version", "version_manager"]
+__all__ = ["version_data", "version_manager"]
 
 import typing
 import json
 import os
 import re
 
+from ..lib import rules
 from ..lib import sysinfo
 from ..lib import java as _java
 from ..lib import path as _path
 
 from . import namepath as _name
 from . import player as _player
-from . import rules
 
 if typing.TYPE_CHECKING:
-    from .launcher import launcher_info
+    from .launcher import client_launcher_info
 
 
-class version:
+class version_data:
+    """
+    版本json文件
+    """
 
-    def __init__(self, data: dict[str, typing.Any], info: typing.Optional[sysinfo] = None) -> None:
+    def __init__(
+        self, data: dict[str, typing.Any], info: sysinfo | None = None
+    ) -> None:
         """
         data: 版本json文件
         """
@@ -42,7 +47,9 @@ class version:
         self.data["id"] = id
         return (f"{old}.json", f"{id}.json"), (f"{old}.jar", f"{id}.jar")
 
-    def get_args(self, features: typing.Optional[dict[str, bool]] = None) -> tuple[list[str], list[str]]:
+    def get_args(
+        self, features: typing.Optional[dict[str, bool]] = None
+    ) -> tuple[list[str], list[str]]:
         """
         返回jvm参数与游戏参数
 
@@ -55,12 +62,14 @@ class version:
         """
         # 低版本不包含jvm参数
         if "minecraftArguments" in self.data:
-            return ["-XX:HeapDumpPath=MojangTricksIntelDriversForPerformance_javaw.exe_minecraft.exe.heapdump",
-                    "-Djava.library.path=${natives_directory}",
-                    "-Dminecraft.launcher.brand=${launcher_name}",
-                    "-Dminecraft.launcher.version=${launcher_version}",
-                    "-cp",
-                    "${classpath}",], self.data["minecraftArguments"].split(" ")
+            return [
+                "-XX:HeapDumpPath=MojangTricksIntelDriversForPerformance_javaw.exe_minecraft.exe.heapdump",
+                "-Djava.library.path=${natives_directory}",
+                "-Dminecraft.launcher.brand=${launcher_name}",
+                "-Dminecraft.launcher.version=${launcher_version}",
+                "-cp",
+                "${classpath}",
+            ], self.data["minecraftArguments"].split(" ")
         data = self.data["arguments"]
         arg_game: list[str] = []
         arg_jvm: list[str] = []
@@ -91,10 +100,12 @@ class version:
         获取库文件列表
         """
         library: dict[str, str] = {}
-        optifine: typing.Optional[str] = None
+        optifine: str | None = None
         ret: list[str] = []
         for item in self.data["libraries"]:
-            if "natives" in item or ("rules" in item and not rules.check(item["rules"], info=self.info)):
+            if "natives" in item or (
+                "rules" in item and not rules.check(item["rules"], info=self.info)
+            ):
                 continue
             # 可能会有相同的库,比较版本号
             name = item["name"]
@@ -121,10 +132,16 @@ class version:
         """
         native: list[str] = []
         for item in self.data["libraries"]:
-            if "natives" not in item or self.info.os not in item["natives"] or "rules" in item and not rules.check(item["rules"], info=self.info):
+            if (
+                "natives" not in item
+                or self.info.os not in item["natives"]
+                or "rules" in item
+                and not rules.check(item["rules"], info=self.info)
+            ):
                 continue
-            native.append(item["downloads"]["classifiers"]
-                          [item["natives"][self.info.os]]["path"])
+            native.append(
+                item["downloads"]["classifiers"][item["natives"][self.info.os]]["path"]
+            )
         return native
 
     def get_jar(self) -> str:
@@ -133,7 +150,9 @@ class version:
         """
         return f"{self.data['id']}.jar"
 
-    def merge_args(self, jvm: list[str], game: list[str], main_class: typing.Optional[str] = None) -> list[str]:
+    def merge_args(
+        self, jvm: list[str], game: list[str], main_class: str | None = None
+    ) -> list[str]:
         """
         合并jvm参数与游戏参数
         """
@@ -158,13 +177,28 @@ class version:
         """
         return f"{self.info.split.join([*library, jar])}"
 
-    def replace_args(self,  launcher_info: launcher_info, java: str | _java.java_manager, args: list[str], class_path: str, player: _player.player_base, game_directory: str, assets_directory: str, natives_directory: str, replacement: typing.Optional[dict[str, typing.Any]] = None, force_utf8: bool = True) -> list[typing.Any]:
+    def replace_args(
+        self,
+        launcher_info: client_launcher_info,
+        java: str | _java.java_manager,
+        args: list[str],
+        class_path: str,
+        player: _player.player_base,
+        game_directory: str,
+        assets_directory: str,
+        natives_directory: str,
+        replacement: typing.Optional[dict[str, typing.Any]] = None,
+        force_utf8: bool = True,
+    ) -> list[typing.Any]:
         """
         替换模板,获得完整的启动参数
         """
         if isinstance(java, _java.java_manager):
             java = java.select_java(
-                self.data["javaVersion"]["majorVersion"] if "javaVersion" in self.data else 8)[0]
+                self.data["javaVersion"]["majorVersion"]
+                if "javaVersion" in self.data
+                else 8
+            )[0]
         ret: list[typing.Any] = [java]
         if force_utf8:
             ret.append("-Dfile.encoding=UTF-8")
@@ -173,7 +207,9 @@ class version:
             "${version_name}": self.data["id"],
             "${game_directory}": game_directory,
             "${assets_root}": assets_directory,
-            "${assets_index_name}": self.data["assets"] if "assets" in self.data else "pre-1.6",
+            "${assets_index_name}": (
+                self.data["assets"] if "assets" in self.data else "pre-1.6"
+            ),
             "${auth_uuid}": player.uuid,
             "${auth_access_token}": str(player.access_token),
             "${user_type}": player.type,
@@ -182,7 +218,7 @@ class version:
             "${launcher_version}": launcher_info.version,
             "${classpath}": class_path,
             "${natives_directory}": natives_directory,
-            "${classpath_separator}": self.info.split
+            "${classpath_separator}": self.info.split,
         }
         if replacement is not None:
             data.update(replacement)
@@ -199,9 +235,9 @@ class version_manager:
     版本管理器
     """
 
-    def __init__(self, file: str, info: typing.Optional[sysinfo] = None) -> None:
+    def __init__(self, file: str, info: sysinfo | None = None) -> None:
         self.info = sysinfo() if info is None else info
-        self.version: version
+        self.version: version_data
         self.file = _path.format_abspath(file)
         self.reload()
 
@@ -237,7 +273,11 @@ class version_manager:
         """
         重命名版本文件夹,版本json与版本jar
         """
-        if check and not _path.valid_filename(name) or not _path.check_removeable(self.dirname):
+        if (
+            check
+            and not _path.valid_filename(name)
+            or not _path.check_removeable(self.dirname)
+        ):
             return False
         self.version.rename(name)
         self.save()
@@ -245,8 +285,7 @@ class version_manager:
         nativename = self.nativename
         os.rename(self.file, os.path.join(self.dirname, f"{name}.json"))
         os.rename(self.jarfile, os.path.join(self.dirname, f"{name}.jar"))
-        self.file = os.path.join(os.path.dirname(
-            self.dirname), name, f"{name}.json")
+        self.file = os.path.join(os.path.dirname(self.dirname), name, f"{name}.json")
         os.rename(oldir, self.dirname)
         if os.path.isdir((native := os.path.join(self.dirname, nativename))):
             os.rename(native, self.native)
@@ -255,9 +294,21 @@ class version_manager:
     def reload(self) -> None:
         with open(self.file, "r", encoding="utf-8") as fp:
             data = json.load(fp)
-        self.version = version(data, self.info)
+        self.version = version_data(data, self.info)
 
-    def get_args(self,  launcher_info: launcher_info, java: str | _java.java_manager, player: _player.player_base, assets_directory: str, libraries_directory: str, custom_jvm: typing.Optional[list[str]] = None, custom_game: typing.Optional[list[str]] = None, main_class: str | None = None, replacement: typing.Optional[dict[str, typing.Any]] = None, force_utf8: bool = True) -> list[typing.Any]:
+    def get_args(
+        self,
+        launcher_info: client_launcher_info,
+        java: str | _java.java_manager,
+        player: _player.player_base,
+        assets_directory: str,
+        libraries_directory: str,
+        custom_jvm: list[str] | None = None,
+        custom_game: list[str] | None = None,
+        main_class: str | None = None,
+        replacement: typing.Optional[dict[str, typing.Any]] = None,
+        force_utf8: bool = True,
+    ) -> list[typing.Any]:
         jvm, game = self.version.get_args()
         if custom_jvm is not None:
             jvm = custom_jvm + jvm
@@ -267,12 +318,17 @@ class version_manager:
             launcher_info,
             java,
             self.version.merge_args(jvm, game, main_class),
-            self.version.merge_cp([os.path.join(libraries_directory, value)
-                                   for value in self.version.get_library()], self.jarfile),
+            self.version.merge_cp(
+                [
+                    os.path.join(libraries_directory, value)
+                    for value in self.version.get_library()
+                ],
+                self.jarfile,
+            ),
             player,
             self.dirname,
             assets_directory,
             self.native,
             replacement,
-            force_utf8
+            force_utf8,
         )

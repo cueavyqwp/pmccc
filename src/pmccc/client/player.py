@@ -2,8 +2,13 @@
 玩家相关
 """
 
-__all__ = ["player_base", "player_offline",
-           "player_online", "player_type", "player_manager"]
+__all__ = [
+    "player_base",
+    "player_offline",
+    "player_online",
+    "player_type",
+    "player_manager",
+]
 
 import time
 import typing
@@ -11,7 +16,7 @@ import hashlib
 import urllib.parse
 import uuid as _uuid
 
-from ..types import SKIN_DEFAULT_TYPE, SKIN_ARM_TYPE, SKIN_DEFAULT,  PmcccResponseError
+from ..types import SKIN_DEFAULT_TYPE, SKIN_ARM_TYPE, SKIN_DEFAULT, PmcccResponseError
 from ..lib import config
 from ..lib.verify import to_hash
 
@@ -46,11 +51,7 @@ class player_base(config.config_base):
         return to_hash(str(self))
 
     def config_export(self) -> dict[str, typing.Any]:
-        return {
-            "type": self.manager_type,
-            "name": self.name,
-            "uuid": self.uuid
-        }
+        return {"type": self.manager_type, "name": self.name, "uuid": self.uuid}
 
     def config_loads(self, data: dict[str, typing.Any]) -> None:
         self.name = data["name"]
@@ -71,8 +72,12 @@ class player_base(config.config_base):
         # 提取mostSigBits和leastSigBits（Java是大端序）
         most_sig_bits = int.from_bytes(bytes_data[:8])
         least_sig_bits = int.from_bytes(bytes_data[8:])
-        result = ((most_sig_bits >> 32) ^ most_sig_bits ^
-                  (least_sig_bits >> 32) ^ least_sig_bits)
+        result = (
+            (most_sig_bits >> 32)
+            ^ most_sig_bits
+            ^ (least_sig_bits >> 32)
+            ^ least_sig_bits
+        )
         # 转换为32位有符号整数
         result = result & 0xFFFFFFFF
         if result > 0x7FFFFFFF:
@@ -88,7 +93,9 @@ class player_base(config.config_base):
         wide = False
         if index >= length:
             wide = True
-        return SKIN_DEFAULT[index % 9], SKIN_ARM_TYPE.WIDE if wide else SKIN_ARM_TYPE.SLIM
+        return SKIN_DEFAULT[index % 9], (
+            SKIN_ARM_TYPE.WIDE if wide else SKIN_ARM_TYPE.SLIM
+        )
 
 
 class player_offline(player_base):
@@ -103,18 +110,16 @@ class player_offline(player_base):
         self.uuid
 
     def config_export(self) -> dict[str, typing.Any]:
-        return {
-            "type": self.manager_type,
-            "name": self.name
-        }
+        return {"type": self.manager_type, "name": self.name}
 
     def config_loads(self, data: dict[str, typing.Any]) -> None:
         self.name = data["name"]
 
     @property
     def uuid(self) -> str:
-        md5_bytes = bytearray(hashlib.md5(
-            f"OfflinePlayer:{self.name}".encode()).digest())
+        md5_bytes = bytearray(
+            hashlib.md5(f"OfflinePlayer:{self.name}".encode()).digest()
+        )
         md5_bytes[6] = (md5_bytes[6] & 0x0F) | 0x30
         md5_bytes[8] = (md5_bytes[8] & 0x3F) | 0x80
         uuid_hex = md5_bytes.hex()
@@ -144,9 +149,9 @@ class player_online(player_base):
 
     """
 
-    def __init__(self, microsoft_refresh_token: typing.Optional[str] = None, lastuse: int = -1):
+    def __init__(self, microsoft_refresh_token: str | None = None, lastuse: int = -1):
         self.microsoft_refresh_token = microsoft_refresh_token
-        self.access_token: typing.Optional[str] = None
+        self.access_token: str | None = None
         self.profile: dict[str, typing.Any] = {}
         self.lastuse = lastuse
         self.manager_type = "msa"
@@ -159,7 +164,7 @@ class player_online(player_base):
         return {
             "type": self.manager_type,
             "refresh_token": self.microsoft_refresh_token,
-            "lastuse": self.lastuse
+            "lastuse": self.lastuse,
         }
 
     def config_loads(self, data: dict[str, typing.Any]) -> None:
@@ -189,13 +194,16 @@ class player_online(player_base):
         url: 第一步登录后跳转的地址
         """
         code = urllib.parse.urlparse(url).query.split("code=")[1].split("&")[0]
-        response = requests.post("https://login.live.com/oauth20_token.srf", data={
-            "client_id": "00000000402B5328",
-            "scope": "service::user.auth.xboxlive.com::MBI_SSL",
-            "code": code,
-            "redirect_uri": "https://login.live.com/oauth20_desktop.srf",
-            "grant_type": "authorization_code"
-        })
+        response = requests.post(
+            "https://login.live.com/oauth20_token.srf",
+            data={
+                "client_id": "00000000402B5328",
+                "scope": "service::user.auth.xboxlive.com::MBI_SSL",
+                "code": code,
+                "redirect_uri": "https://login.live.com/oauth20_desktop.srf",
+                "grant_type": "authorization_code",
+            },
+        )
         if not response.ok:
             raise PmcccResponseError(response)
         data = response.json()
@@ -207,15 +215,18 @@ class player_online(player_base):
         """
         登录第三步,获取Xbox Live令牌
         """
-        response = requests.post("https://user.auth.xboxlive.com/user/authenticate", json={
-            "Properties": {
-                "AuthMethod": "RPS",
-                "SiteName": "user.auth.xboxlive.com",
-                "RpsTicket": microsoft_token
+        response = requests.post(
+            "https://user.auth.xboxlive.com/user/authenticate",
+            json={
+                "Properties": {
+                    "AuthMethod": "RPS",
+                    "SiteName": "user.auth.xboxlive.com",
+                    "RpsTicket": microsoft_token,
+                },
+                "RelyingParty": "http://auth.xboxlive.com",
+                "TokenType": "JWT",
             },
-            "RelyingParty": "http://auth.xboxlive.com",
-            "TokenType": "JWT"
-        })
+        )
         if not response.ok:
             raise PmcccResponseError(response)
         data = response.json()
@@ -225,14 +236,14 @@ class player_online(player_base):
         """
         登录第四步,获取XSTS令牌
         """
-        response = requests.post("https://xsts.auth.xboxlive.com/xsts/authorize", json={
-            "Properties": {
-                "SandboxId": "RETAIL",
-                "UserTokens": [xbox_live_token]
+        response = requests.post(
+            "https://xsts.auth.xboxlive.com/xsts/authorize",
+            json={
+                "Properties": {"SandboxId": "RETAIL", "UserTokens": [xbox_live_token]},
+                "RelyingParty": "rp://api.minecraftservices.com/",
+                "TokenType": "JWT",
             },
-            "RelyingParty": "rp://api.minecraftservices.com/",
-            "TokenType": "JWT"
-        })
+        )
         if not response.ok:
             raise PmcccResponseError(response)
         data = response.json()
@@ -242,9 +253,10 @@ class player_online(player_base):
         """
         登录第五步,获取Minecraft令牌
         """
-        response = requests.post("https://api.minecraftservices.com/authentication/login_with_xbox", json={
-            "identityToken": f"XBL3.0 x={xsts_userhash};{xsts_token}"
-        })
+        response = requests.post(
+            "https://api.minecraftservices.com/authentication/login_with_xbox",
+            json={"identityToken": f"XBL3.0 x={xsts_userhash};{xsts_token}"},
+        )
         if not response.ok:
             raise PmcccResponseError(response)
         data = response.json()
@@ -254,8 +266,7 @@ class player_online(player_base):
         """
         初始化自动登陆,先访问login_url获取返回的url,返回refresh_token
         """
-        microsoft_token, microsoft_refresh_token = self.login_token_microsoft(
-            url)
+        microsoft_token, microsoft_refresh_token = self.login_token_microsoft(url)
         self.lastuse = int(time.time())
         xbox_live_token = self.login_token_xbox_live(microsoft_token)
         xsts_userhash, xsts_token = self.login_token_xsts(xbox_live_token)
@@ -269,7 +280,7 @@ class player_online(player_base):
             pass
         return microsoft_refresh_token
 
-    def login_auto(self, microsoft_refresh_token: typing.Optional[str] = None) -> bool:
+    def login_auto(self, microsoft_refresh_token: str | None = None) -> bool:
         """
         自动登录
         """
@@ -293,12 +304,15 @@ class player_online(player_base):
         """
         刷新Microsoft令牌
         """
-        response = requests.post("https://login.live.com/oauth20_token.srf", data={
-            "scope": "service::user.auth.xboxlive.com::MBI_SSL",
-            "client_id": "00000000402B5328",
-            "grant_type": "refresh_token",
-            "refresh_token": microsoft_refresh_token
-        })
+        response = requests.post(
+            "https://login.live.com/oauth20_token.srf",
+            data={
+                "scope": "service::user.auth.xboxlive.com::MBI_SSL",
+                "client_id": "00000000402B5328",
+                "grant_type": "refresh_token",
+                "refresh_token": microsoft_refresh_token,
+            },
+        )
         if not response.ok:
             raise PmcccResponseError(response)
         self.lastuse = int(time.time())
@@ -309,9 +323,10 @@ class player_online(player_base):
         """
         获取档案
         """
-        response = requests.get("https://api.minecraftservices.com/minecraft/profile", headers={
-            "Authorization": f"Bearer {minecraft_token}"
-        })
+        response = requests.get(
+            "https://api.minecraftservices.com/minecraft/profile",
+            headers={"Authorization": f"Bearer {minecraft_token}"},
+        )
         if not response.ok:
             raise PmcccResponseError(response)
         data = response.json()
@@ -322,8 +337,9 @@ class player_online(player_base):
         """
         刷新档案
         """
-        self.profile = {} if self.access_token is None else self.get_profile(
-            self.access_token)
+        self.profile = (
+            {} if self.access_token is None else self.get_profile(self.access_token)
+        )
         return self.ready
 
 
@@ -333,7 +349,7 @@ class player_type:
         self.types: dict[str, type[player_base]] = {
             "custom": player_base,
             "offline": player_offline,
-            "msa": player_online
+            "msa": player_online,
         }
         for key, types in kwargs.items():
             self.add_type(key, types)
@@ -353,7 +369,11 @@ class player_manager(config.config_base):
     管理玩家档案
     """
 
-    def __init__(self, data: typing.Optional[dict[str, typing.Any]] = None, types: typing.Optional[player_type] = None) -> None:
+    def __init__(
+        self,
+        data: typing.Optional[dict[str, typing.Any]] = None,
+        types: player_type | None = None,
+    ) -> None:
         self.player: dict[int, player_base] = {}
         self.types = player_type() if types is None else types
         if data is not None:
@@ -362,7 +382,9 @@ class player_manager(config.config_base):
     def __getitem__(self, index: int) -> player_base:
         return self.get_player(index)
 
-    def __setitem__(self, types: str, args: tuple[typing.Any, ...] | list[typing.Any]) -> None:
+    def __setitem__(
+        self, types: str, args: tuple[typing.Any, ...] | list[typing.Any]
+    ) -> None:
         self.add_player(types, *args)
 
     def __delitem__(self, index: int) -> None:

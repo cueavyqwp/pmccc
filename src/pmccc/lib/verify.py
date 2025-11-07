@@ -6,13 +6,17 @@ __all__ = ["get_type", "to_hash", "hasher", "verify_hash"]
 
 import hashlib
 import typing
-import os
 
 from ..types import HASH_TYPE, HASHER
 
 
 def get_type(value: str) -> HASH_TYPE:
-    return {32: HASH_TYPE.MD5, 40: HASH_TYPE.SHA1, 64: HASH_TYPE.SHA256, 128: HASH_TYPE.SHA512}[len(value)]
+    return {
+        32: HASH_TYPE.MD5,
+        40: HASH_TYPE.SHA1,
+        64: HASH_TYPE.SHA256,
+        128: HASH_TYPE.SHA512,
+    }[len(value)]
 
 
 def to_hash(obj: typing.Any) -> int:
@@ -34,11 +38,6 @@ class hasher:
         with open(file, "rb") as fp:
             for data in iter(lambda: fp.read(4096), b""):
                 self.update(data)
-        return self.hexdigest
-
-    def load_dir(self, path: str, filter: typing.Optional[str] = None) -> str:
-        for file in sorted((value for value in (os.path.join(path, item) for item in os.listdir(path)) if os.path.isfile(value) and (filter is None or filter in value))):
-            self.load(file)
         return self.hexdigest
 
     @property

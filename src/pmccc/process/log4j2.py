@@ -2,13 +2,19 @@
 log4j2相关
 """
 
-__all__ = ["loginfo", "log4j2"]
+from __future__ import annotations
+
+__all__ = ["loginfo", "log4j2_base"]
 
 import datetime
 import typing
+import abc
 import os
 
 from ..types import LOG_LEVEL_TYPE, LOG_LEVEL
+
+if typing.TYPE_CHECKING:
+    import subprocess
 
 
 class loginfo:
@@ -18,16 +24,26 @@ class loginfo:
         解析日志信息
         """
         self.timestr, level, self.thread = text[1:-1].split("][")
-        self.level = LOG_LEVEL.get(level, LOG_LEVEL_TYPE.INFO)
-        self.time = datetime.datetime.strptime(
-            self.timestr, "%Y/%m/%d %H:%M:%S")
+        self.level = LOG_LEVEL.get(level.upper(), LOG_LEVEL_TYPE.INFO)
+        self.time = datetime.datetime.strptime(self.timestr, "%Y/%m/%d %H:%M:%S")
 
 
-class log4j2:
+class log4j2_base:
+    """
+    log4j2类
 
-    def __init__(self, config: typing.Optional[str] = None, info: type[loginfo] = loginfo) -> None:
-        self.config = os.path.join(os.path.dirname(
-            __file__), "log4j2.xml") if config is None or not os.path.isfile(config) else config
+    你可以使用此类来解析log4j2日志
+    """
+
+    def __init__(
+        self, config: str | None = None, info: type[loginfo] = loginfo
+    ) -> None:
+        self.config = (
+            os.path.join(os.path.dirname(__file__), "log4j2.xml")
+            if config is None or not os.path.isfile(config)
+            else config
+        )
+        self.popen: subprocess.Popen[bytes] | None = None
         self.info = info
 
     def is_line(self, text: str) -> bool:
@@ -40,11 +56,15 @@ class log4j2:
         return split[0].startswith("[") and split[0].endswith("]")
 
     def split(self, line: str) -> tuple[loginfo, str]:
+        """
+        分割日志信息
+        """
         head, text = line.split(": ", 1)
         return self.info(head), text
 
+    @abc.abstractmethod
     def parse(self, line: str) -> None:
         """
         可以通过覆写自定义解析
         """
-        print(line, end="")
+        pass

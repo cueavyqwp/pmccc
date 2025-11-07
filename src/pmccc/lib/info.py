@@ -20,7 +20,9 @@ class sysinfo:
 
     def update(self) -> None:
         self.os = {"Windows": "windows", "Linux": "linux", "Darwin": "osx"}.get(
-            platform.system(), "windows")  # type: ignore
+            platform.system(),
+            "windows",
+        )  # pyright: ignore[reportAttributeAccessIssue]
         self.os_version = platform.version()
         self.arch = "x64" if "64" in platform.machine() else "x86"
 

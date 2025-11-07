@@ -17,31 +17,49 @@ if os.name == "nt":
 else:
     import select
 
-from .log4j2 import log4j2 as _log4j2
+from .log4j2 import log4j2_base
 
 
-class popen(subprocess.Popen[str]):
+class popen(subprocess.Popen[bytes]):
     """
     自定义Popen类
     """
 
-    def __init__(self, args: list[typing.Any], cwd: typing.Optional[str] = None, log4j2: typing.Optional[_log4j2] = None, ignore_parse_error: bool = True, daemon: bool = True) -> None:
+    def __init__(
+        self,
+        args: list[typing.Any],
+        cwd: str | None = None,
+        output: bool = True,
+        log4j2: log4j2_base | None = None,
+        ignore_parse_error: bool = True,
+        daemon: bool = True,
+    ) -> None:
         self.ignore_parse_error = ignore_parse_error
         self.log4j2 = log4j2
+        self.output = output
         if log4j2 is not None:
             args.insert(1, f"-Dlog4j.configurationFile={log4j2.config}")
+            log4j2.popen = self
         # 获取游戏所在目录
         if cwd is None:
             for index in range(len(args)):
                 if args[index] == "--gameDir":
-                    cwd = str(args[index+1])
+                    cwd = str(args[index + 1])
                     break
-        self.stdin: typing.IO[str]  # type: ignore
-        self.stdout: typing.IO[str]  # type: ignore
-        super().__init__(args, stdin=subprocess.PIPE, stderr=subprocess.STDOUT,
-                         stdout=None if log4j2 is None else subprocess.PIPE,  encoding="utf-8", text=True, cwd=cwd)
-        self.parse_thread = threading.Thread(
-            target=self.parse, daemon=True)
+        self.stdin: typing.IO[  # pyright: ignore[reportIncompatibleVariableOverride]
+            bytes
+        ]
+        self.stdout: typing.IO[  # pyright: ignore[reportIncompatibleVariableOverride]
+            bytes
+        ]
+        super().__init__(
+            args,
+            stdin=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            stdout=None if log4j2 is None else subprocess.PIPE,
+            cwd=cwd,
+        )
+        self.parse_thread = threading.Thread(target=self.parse, daemon=True)
         self.parse_thread.start()
         if daemon:
             atexit.register(self.exit)
@@ -54,8 +72,12 @@ class popen(subprocess.Popen[str]):
             return
         line: list[str] = []
         for text in iter(self.stdout.readline, ""):
+            text = text.decode("utf-8", errors="replace")
             if text == "\t\n":
-                self.parse_call("".join(line))
+                value = "".join(line)
+                if self.output:
+                    sys.stdout.write(value)
+                self.parse_call(value)
                 line = []
                 continue
             if self.log4j2.is_line(text):
@@ -80,6 +102,9 @@ class popen(subprocess.Popen[str]):
         return self.wait()
 
     def input(self) -> None:
+        """
+        非阻塞获取命令行输入
+        """
         if os.name == "nt":
             buffer: list[str] = []
         while self.poll() is None:
@@ -89,7 +114,9 @@ class popen(subprocess.Popen[str]):
                         char = msvcrt.getwch()
                         match char:
                             case "\r":
-                                self.stdin.write("".join(buffer) + "\n")
+                                self.stdin.write(
+                                    ("".join(buffer) + "\n").encode("utf-8")
+                                )
                                 self.stdin.flush()
                                 buffer.clear()
                                 sys.stdout.write("\n")
@@ -106,9 +133,8 @@ class popen(subprocess.Popen[str]):
                     else:
                         time.sleep(0.05)
                 elif select.select([sys.stdin], [], [], 0.1)[0]:
-                    text = sys.stdin.readline()
-                    if text:
-                        self.stdin.write(text)
+                    if text := sys.stdin.readline():
+                        self.stdin.write(text.encode("utf-8"))
                         self.stdin.flush()
             except (KeyboardInterrupt, EOFError):
                 self.stdin.close()

@@ -2,6 +2,7 @@
 库相关
 """
 
-from .sysinfo import *
+from .info import *
 from .verify import *
+from .rules import *
 from .java import *

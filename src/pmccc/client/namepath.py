@@ -2,7 +2,6 @@
 name转路径
 """
 
-import typing
 import os
 
 __all__ = ["split", "to_path", "get_path", "compare"]
@@ -16,11 +15,16 @@ def split(text: str) -> list[str]:
     return [*split[:3], split[3] if len(split) > 3 else ""]
 
 
-def to_path(package: str, name: str, version: str, platform: typing.Optional[str] = None) -> str:
+def to_path(package: str, name: str, version: str, platform: str | None = None) -> str:
     """
     把split转为相对路径
     """
-    return os.path.join(*package.split("."), name, version, f"{name}-{version}{f'-{platform}' if platform else ''}.jar")
+    return os.path.join(
+        *package.split("."),
+        name,
+        version,
+        f"{name}-{version}{f'-{platform}' if platform else ''}.jar",
+    )
 
 
 def get_path(text: str) -> str:
@@ -39,9 +43,9 @@ def compare(first: str, second: str) -> bool:
     len_first = len(split_first)
     len_second = len(split_second)
     if len_first > len_second:
-        split_second += [0]*(len_first-len_second)
+        split_second += [0] * (len_first - len_second)
     else:
-        split_first += [0]*(len_second-len_first)
+        split_first += [0] * (len_second - len_first)
     for numf, nums in zip(split_first, split_second):
         if numf >= nums:
             return True

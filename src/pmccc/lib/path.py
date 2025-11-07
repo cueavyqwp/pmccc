@@ -3,11 +3,16 @@
 """
 
 import shutil
-import typing
 import os
 
-__all__ = ["format_abspath", "format_relpath", "check_dir",
-           "check_removeable", "remove", "valid_filename"]
+__all__ = [
+    "format_abspath",
+    "format_relpath",
+    "check_dir",
+    "check_removeable",
+    "remove",
+    "valid_filename",
+]
 
 
 def format_abspath(path: str) -> str:
@@ -17,7 +22,7 @@ def format_abspath(path: str) -> str:
     return os.path.normpath(os.path.abspath(path))
 
 
-def format_relpath(path: str, start: typing.Optional[str] = None) -> str:
+def format_relpath(path: str, start: str | None = None) -> str:
     """
     格式化为相对路径
     """
@@ -44,7 +49,10 @@ def check_removeable(path: str) -> bool:
     """
     if os.path.isdir(path):
         for root, _, files in os.walk(path):
-            if not any(os.access(value, os.W_OK) for value in [root, *(os.path.join(root, item) for item in files)]):
+            if not any(
+                os.access(value, os.W_OK)
+                for value in [root, *(os.path.join(root, item) for item in files)]
+            ):
                 return False
         return True
     else:
@@ -74,9 +82,32 @@ def valid_filename(name: str) -> bool:
     """
     if not name or "\0" in name or "/" in name:
         return False
-    bad = set("<>:\"\\|?*")
+    bad = set('<>:"\\|?*')
     if set(name) & bad:
         return False
-    if os.path.splitext(name)[0].upper() in ("AUX", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "CON", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9", "NUL", "PRN"):
+    if os.path.splitext(name)[0].upper() in (
+        "AUX",
+        "COM1",
+        "COM2",
+        "COM3",
+        "COM4",
+        "COM5",
+        "COM6",
+        "COM7",
+        "COM8",
+        "COM9",
+        "CON",
+        "LPT1",
+        "LPT2",
+        "LPT3",
+        "LPT4",
+        "LPT5",
+        "LPT6",
+        "LPT7",
+        "LPT8",
+        "LPT9",
+        "NUL",
+        "PRN",
+    ):
         return False
     return True
