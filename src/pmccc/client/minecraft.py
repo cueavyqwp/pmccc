@@ -11,8 +11,16 @@ from .version import version_manager
 
 
 class minecraft_manager:
+    """
+    .minecraft文件夹管理器
+    """
 
     def __init__(self, home: str) -> None:
+        """
+        .minecraft文件夹管理器
+
+        home: .minecraft文件夹路径
+        """
         self.versions: dict[str, str] = {}
         self.home = _path.format_abspath(home)
         for path in (self.path_versions, self.path_assets, self.path_libraries):
@@ -20,17 +28,29 @@ class minecraft_manager:
 
     @property
     def path_assets(self) -> str:
+        """
+        资源文件路径
+        """
         return os.path.join(self.home, "assets")
 
     @property
     def path_libraries(self) -> str:
+        """
+        库文件夹
+        """
         return os.path.join(self.home, "libraries")
 
     @property
     def path_versions(self) -> str:
+        """
+        版本文件夹
+        """
         return os.path.join(self.home, "versions")
 
     def version_list(self) -> dict[str, str]:
+        """
+        获取版本列表
+        """
         return {
             name: path
             for name in os.listdir(self.path_versions)
@@ -38,6 +58,11 @@ class minecraft_manager:
         }
 
     def version_get(self, name: str) -> version_manager:
+        """
+        获取版本
+
+        name: 版本名称
+        """
         return version_manager(os.path.join(self.path_versions, name, f"{name}.json"))
 
     def update(self) -> None:

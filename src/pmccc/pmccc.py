@@ -1,5 +1,5 @@
 """
-pmccc
+pmccc版本
 """
 
 __all__ = ["__version__"]

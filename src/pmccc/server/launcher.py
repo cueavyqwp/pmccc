@@ -45,6 +45,9 @@ class server_launcher:
             file = os.path.join(self.cwd, "eula.txt")
             with open(file, "w", encoding="utf-8") as fp:
                 fp.write("eula=true")
+        """
+        启动服务端
+        """
         return process.popen(
             [java, *self.args],
             self.cwd,

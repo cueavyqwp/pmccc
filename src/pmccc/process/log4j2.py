@@ -18,10 +18,13 @@ if typing.TYPE_CHECKING:
 
 
 class loginfo:
+    """
+    日志信息类
+    """
 
     def __init__(self, text: str) -> None:
         """
-        解析日志信息
+        解析日志头
         """
         self.timestr, level, self.thread = text[1:-1].split("][")
         self.level = LOG_LEVEL.get(level.upper(), LOG_LEVEL_TYPE.INFO)

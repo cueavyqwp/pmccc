@@ -243,29 +243,50 @@ class version_manager:
 
     @property
     def filename(self) -> str:
+        """
+        版本json文件名称
+        """
         return os.path.basename(self.file)
 
     @property
     def jarfile(self) -> str:
+        """
+        版本jar文件名称
+        """
         return os.path.join(self.dirname, os.path.splitext(self.filename)[0] + ".jar")
 
     @property
     def nativename(self) -> str:
+        """
+        native文件夹名称
+        """
         return os.path.splitext(self.filename)[0] + "-natives"
 
     @property
     def native(self) -> str:
+        """
+        native文件夹
+        """
         return os.path.join(self.dirname, self.nativename)
 
     @property
     def dirname(self) -> str:
+        """
+        版本文件夹
+        """
         return os.path.dirname(self.file)
 
     @property
     def name(self) -> str:
+        """
+        版本名称
+        """
         return self.version.data["id"]
 
     def save(self) -> None:
+        """
+        保存版本json文件
+        """
         with open(self.file, "w", encoding="utf-8") as fp:
             json.dump(self.version.data, fp, indent=4, ensure_ascii=False)
 
@@ -292,6 +313,9 @@ class version_manager:
         return True
 
     def reload(self) -> None:
+        """
+        重新加载版本json文件
+        """
         with open(self.file, "r", encoding="utf-8") as fp:
             data = json.load(fp)
         self.version = version_data(data, self.info)
@@ -309,6 +333,9 @@ class version_manager:
         replacement: typing.Optional[dict[str, typing.Any]] = None,
         force_utf8: bool = True,
     ) -> list[typing.Any]:
+        """
+        获取启动参数
+        """
         jvm, game = self.version.get_args()
         if custom_jvm is not None:
             jvm = custom_jvm + jvm

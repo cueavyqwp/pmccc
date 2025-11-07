@@ -11,6 +11,9 @@ from ..types import HASH_TYPE, HASHER
 
 
 def get_type(value: str) -> HASH_TYPE:
+    """
+    依据长度判断哈希类型(算法)
+    """
     return {
         32: HASH_TYPE.MD5,
         40: HASH_TYPE.SHA1,
@@ -32,9 +35,15 @@ class hasher:
         self.hash = HASHER[hasher]()
 
     def update(self, data: str | bytes) -> None:
+        """
+        更新数据
+        """
         self.hash.update(data.encode() if isinstance(data, str) else data)
 
     def load(self, file: str) -> str:
+        """
+        从文件中加载(自动分片读取)
+        """
         with open(file, "rb") as fp:
             for data in iter(lambda: fp.read(4096), b""):
                 self.update(data)
@@ -42,13 +51,23 @@ class hasher:
 
     @property
     def hexdigest(self) -> str:
+        """
+        返回其对应十六进制
+        """
         return self.hash.hexdigest()
 
 
 class verify_hash(hasher):
+    """
+    用于校验哈希值
+    """
+
     def __init__(self, value: str) -> None:
         super().__init__(get_type(value))
         self.value = value
 
     def check(self) -> bool:
+        """
+        校验两值是否相同
+        """
         return self.hash.hexdigest() == self.value

@@ -11,6 +11,9 @@ import psutil
 
 
 class sysinfo:
+    """
+    系统信息类
+    """
 
     def __init__(self) -> None:
         self.os: typing.Literal["windows", "linux", "osx"]
@@ -19,6 +22,9 @@ class sysinfo:
         self.update()
 
     def update(self) -> None:
+        """
+        更新系统信息
+        """
         self.os = {"Windows": "windows", "Linux": "linux", "Darwin": "osx"}.get(
             platform.system(),
             "windows",
@@ -31,10 +37,16 @@ class sysinfo:
 
     @property
     def split(self) -> str:
+        """
+        系统文件分隔符
+        """
         return ";" if self.os == "windows" else ":"
 
     @property
     def native(self) -> str:
+        """
+        native库后缀
+        """
         return {"windows": "dll", "linux": "so", "osx": "jnilib"}.get(self.os, "dll")
 
     @property

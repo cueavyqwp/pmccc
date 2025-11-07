@@ -11,6 +11,7 @@ import atexit
 import sys
 import os
 
+# 用于从命令行获取输入
 if os.name == "nt":
     import msvcrt
     import time
@@ -32,6 +33,7 @@ class popen(subprocess.Popen[bytes]):
         output: bool = True,
         log4j2: log4j2_base | None = None,
         ignore_parse_error: bool = True,
+        force_utf8: bool = True,
         daemon: bool = True,
     ) -> None:
         self.ignore_parse_error = ignore_parse_error
@@ -40,6 +42,8 @@ class popen(subprocess.Popen[bytes]):
         if log4j2 is not None:
             args.insert(1, f"-Dlog4j.configurationFile={log4j2.config}")
             log4j2.popen = self
+        if force_utf8 and "-Dfile.encoding=UTF-8" not in args:
+            args.insert(1, "-Dfile.encoding=UTF-8")
         # 获取游戏所在目录
         if cwd is None:
             for index in range(len(args)):
@@ -98,6 +102,9 @@ class popen(subprocess.Popen[bytes]):
                 raise error
 
     def exit(self) -> int:
+        """
+        中止并等待退出
+        """
         self.terminate()
         return self.wait()
 

@@ -39,6 +39,9 @@ def select_java(
 
 
 class java_info:
+    """
+    Java版本信息
+    """
 
     def __init__(
         self,

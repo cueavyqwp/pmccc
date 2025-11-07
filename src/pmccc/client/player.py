@@ -5,7 +5,7 @@
 __all__ = [
     "player_base",
     "player_offline",
-    "player_online",
+    "player_msa",
     "player_type",
     "player_manager",
 ]
@@ -117,6 +117,9 @@ class player_offline(player_base):
 
     @property
     def uuid(self) -> str:
+        """
+        将"OfflinePlayer:{玩家名}"的md5值转为uuid
+        """
         md5_bytes = bytearray(
             hashlib.md5(f"OfflinePlayer:{self.name}".encode()).digest()
         )
@@ -127,7 +130,7 @@ class player_offline(player_base):
         return self.access_token
 
 
-class player_online(player_base):
+class player_msa(player_base):
     """
     微软登录
 
@@ -173,10 +176,16 @@ class player_online(player_base):
 
     @property
     def name(self) -> str:
+        """
+        玩家名
+        """
         return self.profile.get("name", "")
 
     @property
     def uuid(self) -> str:
+        """
+        玩家uuid
+        """
         return self.profile.get("id", "")
 
     def login_url(self) -> str:
@@ -349,7 +358,7 @@ class player_type:
         self.types: dict[str, type[player_base]] = {
             "custom": player_base,
             "offline": player_offline,
-            "msa": player_online,
+            "msa": player_msa,
         }
         for key, types in kwargs.items():
             self.add_type(key, types)
@@ -361,6 +370,9 @@ class player_type:
         self.types[name] = types
 
     def get_type(self, name: str) -> type[player_base]:
+        """
+        获取玩家类型
+        """
         return self.types[name]
 
 

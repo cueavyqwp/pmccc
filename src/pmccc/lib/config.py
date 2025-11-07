@@ -11,6 +11,9 @@ __all__ = ["config_base"]
 
 
 class config_base:
+    """
+    配置基类
+    """
 
     def config_export(self) -> dict[str, typing.Any]:
         """
