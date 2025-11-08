@@ -49,7 +49,7 @@ class minecraft_manager:
 
     def version_list(self) -> dict[str, str]:
         """
-        获取版本列表
+        获取版本列表,返回版本名及其对应路径
         """
         return {
             name: path
@@ -59,7 +59,7 @@ class minecraft_manager:
 
     def version_get(self, name: str) -> version_manager:
         """
-        获取版本
+        获取版本,返回对应版本管理器
 
         name: 版本名称
         """

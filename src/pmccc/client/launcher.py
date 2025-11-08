@@ -139,7 +139,7 @@ class client_launcher:
         daemon: bool = True,
     ) -> process.popen:
         """
-        启动游戏
+        启动游戏,并返回popen
 
         minecraft: .minecraft文件夹管理器
 

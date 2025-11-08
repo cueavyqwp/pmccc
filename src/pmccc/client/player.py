@@ -104,6 +104,11 @@ class player_offline(player_base):
     """
 
     def __init__(self, name: str = "Dev") -> None:
+        """
+        离线模式,uuid会自动计算
+
+        name: 玩家名
+        """
         self.name = name
         self.type = "Legacy"
         self.manager_type = "offline"
@@ -153,6 +158,13 @@ class player_msa(player_base):
     """
 
     def __init__(self, microsoft_refresh_token: str | None = None, lastuse: int = -1):
+        """
+        微软登录
+
+        microsoft_refresh_token: 微软账户刷新token
+
+        lastuse: 上次刷新token使用时间
+        """
         self.microsoft_refresh_token = microsoft_refresh_token
         self.access_token: str | None = None
         self.profile: dict[str, typing.Any] = {}
@@ -353,8 +365,18 @@ class player_msa(player_base):
 
 
 class player_type:
+    """
+    玩家类型类
+    """
 
     def __init__(self, **kwargs: type[player_base]) -> None:
+        """
+        玩家类型类
+
+        键: 类型名
+
+        值: player_base子类
+        """
         self.types: dict[str, type[player_base]] = {
             "custom": player_base,
             "offline": player_offline,
@@ -363,33 +385,35 @@ class player_type:
         for key, types in kwargs.items():
             self.add_type(key, types)
 
-    def add_type(self, name: str, types: type[player_base]) -> None:
+    def add_type(self, type_name: str, types: type[player_base]) -> None:
         """
         添加玩家类型
         """
-        self.types[name] = types
+        self.types[type_name] = types
 
-    def get_type(self, name: str) -> type[player_base]:
+    def get_type(self, type_name: str) -> type[player_base]:
         """
         获取玩家类型
         """
-        return self.types[name]
+        return self.types[type_name]
 
 
 class player_manager(config.config_base):
     """
-    管理玩家档案
+    玩家管理器
     """
 
     def __init__(
         self,
-        data: typing.Optional[dict[str, typing.Any]] = None,
         types: player_type | None = None,
     ) -> None:
+        """
+        玩家管理器
+
+        types: 玩家类型类
+        """
         self.player: dict[int, player_base] = {}
         self.types = player_type() if types is None else types
-        if data is not None:
-            self.config_loads(data)
 
     def __getitem__(self, index: int) -> player_base:
         return self.get_player(index)
