@@ -7,7 +7,7 @@ __all__ = ["check"]
 import typing
 import re
 
-from . import sysinfo
+from .info import sysinfo
 
 
 def check(
