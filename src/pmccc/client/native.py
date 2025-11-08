@@ -4,13 +4,23 @@ native相关处理
 
 __all__ = ["unzip", "unzip_all"]
 
-import os
-import shutil
+import threading
 import zipfile
+import shutil
+import os
 
 from ..lib import verify
 from ..lib import sysinfo
 from ..lib import path as _path
+
+
+def copy(zp: zipfile.ZipFile, zipinfo: zipfile.ZipInfo, to: str) -> None:
+    """
+    解压压缩包内文件
+    """
+    with zp.open(zipinfo) as fps:
+        with open(to, "wb") as fpt:
+            shutil.copyfileobj(fps, fpt)
 
 
 def unzip(src: str, to: str, info: sysinfo | None = None) -> None:
@@ -39,6 +49,7 @@ def unzip(src: str, to: str, info: sysinfo | None = None) -> None:
                         sha1[name[:-5]] = fp.readline().splitlines()[0].decode("utf-8")
                 elif suffix == info.native:
                     native[name] = zipinfo
+        threads: list[threading.Thread] = []
         for name, zipinfo in native.items():
             target = os.path.join(to, name)
             if (
@@ -47,14 +58,23 @@ def unzip(src: str, to: str, info: sysinfo | None = None) -> None:
                 and verify.verify_file(target).check(sha1[name])
             ):
                 continue
-            with zp.open(zipinfo) as fps:
-                with open(os.path.join(to, name), "wb") as fpt:
-                    shutil.copyfileobj(fps, fpt)
+            threads.append(
+                threading.Thread(target=copy, args=(zp, zipinfo, target), daemon=True)
+            )
+            threads[-1].start()
+        for thread in threads:
+            thread.join()
 
 
 def unzip_all(src: list[str], to: str, info: sysinfo | None = None) -> None:
     """
     解压全部native
     """
+    threads: list[threading.Thread] = []
     for file in src:
-        unzip(file, to, info)
+        threads.append(
+            threading.Thread(target=unzip, args=(file, to, info), daemon=True)
+        )
+        threads[-1].start()
+    for thread in threads:
+        thread.join()
