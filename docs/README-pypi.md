@@ -9,11 +9,16 @@
     <a href = "https://opensource.org/license/mit" >
         <img alt = "license" src = "https://img.shields.io/badge/license-MIT-blue" >
     </a>
-
-[简体中文] | [[English]](./README-en.md)
-
 </div>
+
+# About
+
+This is a `Minecraft` launcher lib for `python`
+
+For more information at [GitHub](https://github.com/cueavyqwp/pmccc)
 
 # 关于
 
 这是一个基于`python`的`Minecraft`启动器库
+
+在[GitHub](https://github.com/cueavyqwp/pmccc)查看更多信息

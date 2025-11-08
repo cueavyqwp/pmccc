@@ -10,10 +10,11 @@
         <img alt = "license" src = "https://img.shields.io/badge/license-MIT-blue" >
     </a>
 
-[简体中文] | [[English]](./README-en.md)
+[[简体中文]](./README.md) | [English]
 
 </div>
 
-# 关于
 
-这是一个基于`python`的`Minecraft`启动器库
+# About
+
+This is a `Minecraft` launcher lib for `python`

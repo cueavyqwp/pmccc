@@ -3,7 +3,7 @@
         "name": "pmccc",
         "version": null,
         "description": "A minecraft launcher library for python",
-        "readme": "docs/README.md",
+        "readme": "docs/README-pypi.md",
         "requires-python": ">=3.10",
         "keywords": [
             "minecraft",
