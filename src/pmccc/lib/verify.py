@@ -2,7 +2,7 @@
 校验相关
 """
 
-__all__ = ["get_type", "to_hash", "hasher", "verify_hash"]
+__all__ = ["get_type", "to_hash", "hasher", "verify_hash", "verify_file"]
 
 import hashlib
 import typing
@@ -71,3 +71,19 @@ class verify_hash(hasher):
         校验两值是否相同
         """
         return self.hash.hexdigest() == self.value
+
+
+class verify_file(hasher):
+    """
+    校验文件
+    """
+
+    def __init__(self, file: str, hasher: HASH_TYPE = HASH_TYPE.SHA1) -> None:
+        super().__init__(hasher)
+        self.load(file)
+
+    def check(self, value: str) -> bool:
+        """
+        校验两值是否相同
+        """
+        return self.hash.hexdigest() == value

@@ -18,6 +18,7 @@ from ..lib import path as _path
 
 from . import namepath as _name
 from . import player as _player
+from . import native as _native
 
 if typing.TYPE_CHECKING:
     from .launcher import client_launcher_info
@@ -95,54 +96,46 @@ class version_data:
                 arg_jvm += item["value"]
         return arg_jvm, arg_game
 
-    def get_library(self) -> list[str]:
+    def get_library(self, cwd: str | None = None) -> tuple[list[str], list[str]]:
         """
-        获取库文件列表
+        获取库与native列表
+
+        cwd: libraries文件夹位置,为空返回相对路径
         """
+        native: list[str] = []
         library: dict[str, str] = {}
         optifine: str | None = None
         ret: list[str] = []
         for item in self.data["libraries"]:
-            if "natives" in item or (
-                "rules" in item and not rules.check(item["rules"], info=self.info)
-            ):
+            if "rules" in item and not rules.check(item["rules"], info=self.info):
                 continue
-            # 可能会有相同的库,比较版本号
-            name = item["name"]
-            # optifine放最后
-            if "optifine" in name:
-                optifine = _name.get_path(name)
-                continue
-            split = _name.split(item["name"])
-            value = split.pop(2)
-            key = ":".join(split)
-            if key not in library or _name.compare(value, library[key][0]):
-                library[key] = value
+            if "natives" in item:
+                if self.info.os not in item["natives"]:
+                    continue
+                path = item["downloads"]["classifiers"][item["natives"][self.info.os]][
+                    "path"
+                ]
+                native.append(path if cwd is None else os.path.join(cwd, path))
+            else:
+                # 可能会有相同的库,比较版本号
+                name = item["name"]
+                # optifine放最后
+                if "optifine" in name:
+                    optifine = _name.get_path(name)
+                    continue
+                split = _name.split(item["name"])
+                value = split.pop(2)
+                key = ":".join(split)
+                if key not in library or _name.compare(value, library[key][0]):
+                    library[key] = value
         for key, value in library.items():
             split = key.split(":")
             split.insert(2, value)
-            ret.append(_name.to_path(*split))
+            path = _name.to_path(*split)
+            ret.append(path if cwd is None else os.path.join(cwd, path))
         if optifine is not None:
-            ret.append(optifine)
-        return ret
-
-    def get_native(self) -> list[str]:
-        """
-        获取native列表
-        """
-        native: list[str] = []
-        for item in self.data["libraries"]:
-            if (
-                "natives" not in item
-                or self.info.os not in item["natives"]
-                or "rules" in item
-                and not rules.check(item["rules"], info=self.info)
-            ):
-                continue
-            native.append(
-                item["downloads"]["classifiers"][item["natives"][self.info.os]]["path"]
-            )
-        return native
+            ret.append(optifine if cwd is None else os.path.join(cwd, optifine))
+        return ret, native
 
     def get_jar(self) -> str:
         """
@@ -320,6 +313,20 @@ class version_manager:
             data = json.load(fp)
         self.version = version_data(data, self.info)
 
+    def unzip_native(
+        self, native: list[str] | None = None, cwd: str | None = None
+    ) -> None:
+        """
+        解压native
+
+        native: native文件列表
+
+        cwd: 库文件夹
+        """
+        if native is None:
+            native = self.version.get_library(cwd)[1]
+        _native.unzip_all(native, self.native, self.info)
+
     def get_args(
         self,
         launcher_info: client_launcher_info,
@@ -327,6 +334,7 @@ class version_manager:
         player: _player.player_base,
         assets_directory: str,
         libraries_directory: str,
+        library: list[str] | None = None,
         custom_jvm: list[str] | None = None,
         custom_game: list[str] | None = None,
         main_class: str | None = None,
@@ -337,6 +345,8 @@ class version_manager:
         获取启动参数
         """
         jvm, game = self.version.get_args()
+        if library is None:
+            library = self.version.get_library(libraries_directory)[0]
         if custom_jvm is not None:
             jvm = custom_jvm + jvm
         if custom_game is not None:
@@ -346,10 +356,7 @@ class version_manager:
             java,
             self.version.merge_args(jvm, game, main_class),
             self.version.merge_cp(
-                [
-                    os.path.join(libraries_directory, value)
-                    for value in self.version.get_library()
-                ],
+                library,
                 self.jarfile,
             ),
             player,

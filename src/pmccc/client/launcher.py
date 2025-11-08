@@ -85,6 +85,7 @@ class client_launcher:
         minecraft: minecraft_manager,
         version: version_manager,
         player: player_base,
+        library: list[str] | None = None,
         custom_jvm: list[str] | None = None,
         custom_game: list[str] | None = None,
         main_class: str | None = None,
@@ -99,6 +100,8 @@ class client_launcher:
         version: 版本管理器
 
         player: 玩家类型
+
+        library: 库文件列表
 
         custom_jvm: 自定义jvm参数
 
@@ -116,6 +119,7 @@ class client_launcher:
             player,
             minecraft.path_assets,
             minecraft.path_libraries,
+            library,
             custom_jvm,
             custom_game,
             main_class,
@@ -166,11 +170,14 @@ class client_launcher:
         daemon: 进程守护
         """
         version = minecraft.version_get(version_name)
+        library, native = version.version.get_library(minecraft.path_libraries)
+        version.unzip_native(native)
         return process.popen(
             self.get_args(
                 minecraft,
                 version,
                 self.player.get_player(player),
+                library,
                 custom_jvm,
                 custom_game,
                 main_class,
