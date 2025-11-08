@@ -170,7 +170,7 @@ class client_launcher:
         daemon: 进程守护
         """
         version = minecraft.version_get(version_name)
-        library, native = version.version.get_library(minecraft.path_libraries)
+        library, native = version.version.get_libraries(minecraft.path_libraries)
         version.unzip_native(native)
         return process.popen(
             self.get_args(

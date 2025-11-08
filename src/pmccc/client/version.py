@@ -96,7 +96,7 @@ class version_data:
                 arg_jvm += item["value"]
         return arg_jvm, arg_game
 
-    def get_library(self, cwd: str | None = None) -> tuple[list[str], list[str]]:
+    def get_libraries(self, cwd: str | None = None) -> tuple[list[str], list[str]]:
         """
         获取库与native列表
 
@@ -324,7 +324,7 @@ class version_manager:
         cwd: 库文件夹
         """
         if native is None:
-            native = self.version.get_library(cwd)[1]
+            native = self.version.get_libraries(cwd)[1]
         _native.unzip_all(native, self.native, self.info)
 
     def get_args(
@@ -346,7 +346,7 @@ class version_manager:
         """
         jvm, game = self.version.get_args()
         if library is None:
-            library = self.version.get_library(libraries_directory)[0]
+            library = self.version.get_libraries(libraries_directory)[0]
         if custom_jvm is not None:
             jvm = custom_jvm + jvm
         if custom_game is not None:

@@ -95,6 +95,9 @@ LOG_LEVEL = {
     "ALL": LOG_LEVEL_TYPE.ALL,
 }
 
+# 网络请求Header
+HEADER = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+
 # 自定义异常
 
 

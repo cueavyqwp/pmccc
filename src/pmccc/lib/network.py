@@ -8,7 +8,7 @@ import threading
 import typing
 import os
 
-from ..types import PmcccResponseError
+from ..types import HEADER, PmcccResponseError
 from .config import config_base
 from . import path as _path
 from . import verify
@@ -16,10 +16,7 @@ from . import verify
 import requests
 
 
-HEADER = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-
-
-class download_item(config_base):
+class download_item:
     """
     下载项
     """
@@ -27,18 +24,13 @@ class download_item(config_base):
     def __init__(
         self,
         url: str,
-        to: str,
-        name: str = "",
         size: int = -1,
         hasher: str | verify.verify_hash | None = None,
-        header: dict[str, str] = HEADER,
     ) -> None:
         """
         下载项
 
         url: 链接
-
-        to: 保存文件(夹)
 
         name: 文件名
 
@@ -46,13 +38,28 @@ class download_item(config_base):
 
         hasher: verify_hash或哈希值字符串,为None不校验
         """
+        self.hasher = verify.verify_hash(hasher) if isinstance(hasher, str) else hasher
+        self.size = size
+        self.url = url
+
+
+class download_task(config_base):
+    """
+    下载任务
+    """
+
+    def __init__(
+        self,
+        item: download_item,
+        to: str,
+        name: str = "",
+        header: dict[str, str] = HEADER,
+    ) -> None:
         if name:
             to = os.path.join(to, name)
         self.to = _path.format_abspath(to)
-        self.hasher = verify.verify_hash(hasher) if isinstance(hasher, str) else hasher
         self.header = header
-        self.size = size
-        self.url = url
+        self.item = item
 
     def __hash__(self) -> int:
         """
@@ -97,26 +104,17 @@ class download_item(config_base):
     def remove_split(self) -> None:
         os.remove(self.infoname)
 
-
-class download_task:
-    """
-    下载任务
-    """
-
-    def __init__(self, item: download_item) -> None:
-        self.item = item
-
     def download_thread(
         self, block_size: int = 4096, rewrite: bool = False
     ) -> threading.Thread:
-        if not os.path.isdir(self.item.dirname):
-            os.makedirs(self.item.dirname)
-        if not rewrite and os.path.isfile(self.item.infoname):
-            self.item.config_load()
+        if not os.path.isdir(self.dirname):
+            os.makedirs(self.dirname)
+        if not rewrite and os.path.isfile(self.infoname):
+            self.config_load()
         else:
             # 初次链接看能拿到啥文件信息
             response = requests.head(
-                self.item.url, headers=self.item.header, allow_redirects=True
+                self.url, headers=self.header, allow_redirects=True
             )
             if not response.ok:
                 raise PmcccResponseError(response)
@@ -127,22 +125,22 @@ class download_task:
             size = headers.get("Content-Length")
             if self.size <= 0 and size is not None:
                 self.size = int(size)
-            self.item.config_save()
+            self.config_save()
         return threading.Thread(
             target=self.download_func, args=(block_size,), daemon=True
         )
 
     def download_func(self, block_size: int = 4096):
         block_size *= 1024
-        response = requests.get(self.item.url, stream=True, headers=self.item.header)
+        response = requests.get(self.url, stream=True, headers=self.header)
         if not response.ok:
             raise PmcccResponseError(response)
-        with open(self.item.to, "wb") as fp:
+        with open(self.to, "wb") as fp:
             for chunk in response.iter_content(block_size):
                 fp.write(chunk)
-                if self.item.hasher:
-                    self.item.hasher.update(chunk)
-        self.item.remove_split()
+                if self.hasher:
+                    self.hasher.update(chunk)
+        self.remove_split()
 
     def download(self, block_size: int = 4096, rewrite: bool = False) -> bool:
         thread = self.download_thread(block_size, rewrite)
@@ -151,7 +149,7 @@ class download_task:
         return self.check()
 
     def check(self) -> bool:
-        if self.item.hasher is None:
+        if self.hasher is None:
             return True
         else:
-            return self.item.hasher.check()
+            return self.hasher.check()
