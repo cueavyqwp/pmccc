@@ -34,7 +34,7 @@ class installer:
         self.mirror = _mirror.mirror_base() if mirror is None else mirror
         self.header = header
 
-    def get_version(self, unlisted: bool = False) -> dict[str, typing.Any]:
+    def get_version_list(self, unlisted: bool = False) -> dict[str, typing.Any]:
         response = requests.get(
             self.mirror.urls["version-unlisted" if unlisted else "version"],
             headers=self.header,
@@ -71,7 +71,10 @@ class installer:
         return download_item(self.mirror.parse(data["url"]), data["size"], data["sha1"])
 
     def get_libraries(
-        self, version: version_data, info: sysinfo | None = None
+        self,
+        version: version_data,
+        library: str | None = None,
+        info: sysinfo | None = None,
     ) -> dict[str, download_item]:
         if info is None:
             info = sysinfo()
@@ -99,13 +102,13 @@ class installer:
                     )
             else:
                 name = item["name"]
+                path = _name.get_path(name)
                 if "downloads" in item:
                     value = item["downloads"]["artifact"]
                     url = value["url"]
                     # forge,你是怎么做到有哈希值和文件大小,url却为空的
                     if not url:
                         if "minecraftforge" in name:
-                            path = _name.get_path(name)
                             # forge的maven里找不到这个jar,但bmclapi却能找到
                             parse = _parse.urlparse(
                                 "https://bmclapi2.bangbang93.com/maven"
@@ -118,7 +121,7 @@ class installer:
                         else:
                             # 其它特例遇见再说
                             raise NotImplementedError
-                    libraries[_name.get_path(item["name"])] = download_item(
+                    libraries[path] = download_item(
                         self.mirror.parse(url),
                         value["size"] if "size" in value else -1,
                         value["sha1"] if "sha1" in value else None,
@@ -127,13 +130,12 @@ class installer:
                     # optifine官网下载需要看广告,虽然应该可以通过写爬虫来绕过,但是还是直接用镜像吧
                     text = _name.split(name)[2]
                     mcversion, _, _, patch = text.split("_")
-                    libraries[_name.get_path(item["name"])] = download_item(
+                    libraries[path] = download_item(
                         self.mirror.parse(
                             f"https://bmclapi2.bangbang93.com/optifine/{mcversion}/HD_U/{patch}"
                         )
                     )
                 elif "net.minecraft" in name:
-                    path = _name.get_path(name)
                     parse = _parse.urlparse(self.mirror.urls["libraries"])
                     url = self.mirror.parse(
                         _parse.urlunparse(parse._replace(path=parse.path + f"/{path}"))
@@ -155,6 +157,10 @@ class installer:
                         _parse.urlunparse(parse._replace(path=parse.path + f"/{path}"))
                     )
                     libraries[path] = download_item(url)
+        if library is not None:
+            return {
+                os.path.join(library, path): item for path, item in libraries.items()
+            }
         return libraries
 
     def get_assets_index(
@@ -191,7 +197,7 @@ class installer:
             if assets is not None:
                 path = os.path.join(assets, "objects", uri)
             ret[path] = download_item(
-                self.mirror.urls["assets"] + uri,
+                self.mirror.urls["assets"] + f"/{uri}",
                 value["size"],
                 file_hash,
             )

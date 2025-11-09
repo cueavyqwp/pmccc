@@ -69,9 +69,9 @@ class download_task(config_base):
 
     def config_export(self) -> dict[str, typing.Any]:
         return {
-            "hash": "" if self.hasher is None else self.hasher.value,
-            "size": self.size,
-            "url": self.url,
+            "hash": "" if self.item.hasher is None else self.item.hasher.value,
+            "size": self.item.size,
+            "url": self.item.url,
         }
 
     def config_save(self, path: str = "") -> None:
@@ -80,11 +80,11 @@ class download_task(config_base):
     def config_loads(self, data: dict[str, typing.Any]) -> None:
         hasher = data["hash"]
         if hasher:
-            self.hasher = verify.verify_hash(hasher)
+            self.item.hasher = verify.verify_hash(hasher)
         else:
-            self.hasher = None
-        self.size = data["size"]
-        self.url = data["url"]
+            self.item.hasher = None
+        self.item.size = data["size"]
+        self.item.url = data["url"]
 
     def config_load(self, path: str = "") -> None:
         super().config_load(path if path else self.infoname)
@@ -114,7 +114,7 @@ class download_task(config_base):
         else:
             # 初次链接看能拿到啥文件信息
             response = requests.head(
-                self.url, headers=self.header, allow_redirects=True
+                self.item.url, headers=self.header, allow_redirects=True
             )
             if not response.ok:
                 raise PmcccResponseError(response)
@@ -123,8 +123,8 @@ class download_task(config_base):
                 "Accept-Ranges" in headers and headers["Accept-Ranges"] == "bytes"
             )
             size = headers.get("Content-Length")
-            if self.size <= 0 and size is not None:
-                self.size = int(size)
+            if self.item.size <= 0 and size is not None:
+                self.item.size = int(size)
             self.config_save()
         return threading.Thread(
             target=self.download_func, args=(block_size,), daemon=True
@@ -132,14 +132,14 @@ class download_task(config_base):
 
     def download_func(self, block_size: int = 4096):
         block_size *= 1024
-        response = requests.get(self.url, stream=True, headers=self.header)
+        response = requests.get(self.item.url, stream=True, headers=self.header)
         if not response.ok:
             raise PmcccResponseError(response)
         with open(self.to, "wb") as fp:
             for chunk in response.iter_content(block_size):
                 fp.write(chunk)
-                if self.hasher:
-                    self.hasher.update(chunk)
+                if self.item.hasher:
+                    self.item.hasher.update(chunk)
         self.remove_split()
 
     def download(self, block_size: int = 4096, rewrite: bool = False) -> bool:
@@ -149,7 +149,7 @@ class download_task(config_base):
         return self.check()
 
     def check(self) -> bool:
-        if self.hasher is None:
+        if self.item.hasher is None:
             return True
         else:
-            return self.hasher.check()
+            return self.item.hasher.check()

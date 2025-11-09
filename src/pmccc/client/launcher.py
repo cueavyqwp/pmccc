@@ -18,7 +18,7 @@ import typing
 
 if typing.TYPE_CHECKING:
     from .minecraft import minecraft_manager
-    from .version import version_manager
+    from . import version as _version
 
 
 class client_launcher_info:
@@ -83,7 +83,7 @@ class client_launcher:
     def get_args(
         self,
         minecraft: minecraft_manager,
-        version: version_manager,
+        version: _version.version_manager,
         player: player_base,
         library: list[str] | None = None,
         custom_jvm: list[str] | None = None,
@@ -130,8 +130,8 @@ class client_launcher:
     def launch(
         self,
         minecraft: minecraft_manager,
-        version_name: str,
-        player: int,
+        version: str | _version.version_manager,
+        player: player_base | int,
         custom_jvm: list[str] | None = None,
         custom_game: list[str] | None = None,
         main_class: str | None = None,
@@ -147,9 +147,9 @@ class client_launcher:
 
         minecraft: .minecraft文件夹管理器
 
-        version_name: 版本名称
+        version: 版本名称或版本管理器
 
-        player: 玩家索引
+        player: 玩家或玩家索引
 
         custom_jvm: 自定义jvm参数
 
@@ -169,14 +169,17 @@ class client_launcher:
 
         daemon: 进程守护
         """
-        version = minecraft.version_get(version_name)
+        if isinstance(version, str):
+            version = minecraft.version_get(version)
+        if isinstance(player, int):
+            player = self.player.get_player(player)
         library, native = version.version.get_libraries(minecraft.path_libraries)
         version.unzip_native(native)
         return process.popen(
             self.get_args(
                 minecraft,
                 version,
-                self.player.get_player(player),
+                player,
                 library,
                 custom_jvm,
                 custom_game,

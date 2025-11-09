@@ -60,7 +60,7 @@ class popen(subprocess.Popen[bytes]):
             args,
             stdin=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            stdout=None if log4j2 is None else subprocess.PIPE,
+            stdout=subprocess.PIPE,
             cwd=cwd,
         )
         self.parse_thread = threading.Thread(target=self.parse, daemon=True)
@@ -72,8 +72,6 @@ class popen(subprocess.Popen[bytes]):
         """
         分出每行并调用log4j2类中的parse
         """
-        if self.log4j2 is None:
-            return
         line: list[str] = []
         for text in iter(self.stdout.readline, ""):
             text = text.decode("utf-8", errors="replace")
@@ -84,6 +82,8 @@ class popen(subprocess.Popen[bytes]):
                 continue
             elif self.output:
                 sys.stdout.write(text)
+            if self.log4j2 is None:
+                continue
             if self.log4j2.is_line(text):
                 line = [text]
             elif line:

@@ -15,7 +15,7 @@ class mirror_base:
     urls = {
         "version": "http://launchermeta.mojang.com/mc/game/version_manifest_v2.json",
         "version-unlisted": "https://zkitefly.github.io/unlisted-versions-of-minecraft/version_manifest.json",
-        "assets": "http://resources.download.minecraft.net",
+        "assets": "https://resources.download.minecraft.net",
         "libraries": "https://libraries.minecraft.net",
         "maven": "https://maven.aliyun.com/repository/public",
         "forge": "https://files.minecraftforge.net/maven",
