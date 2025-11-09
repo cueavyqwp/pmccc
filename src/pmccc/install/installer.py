@@ -130,6 +130,7 @@ class installer_manager:
                     url = self.mirror.parse(
                         _parse.urlunparse(parse._replace(path=parse.path + f"/{path}"))
                     )
+                    libraries[path] = download_item(url)
                 else:
                     # 其它特例遇见再说
                     raise NotImplementedError
