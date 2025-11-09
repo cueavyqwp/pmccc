@@ -79,11 +79,11 @@ class popen(subprocess.Popen[bytes]):
             text = text.decode("utf-8", errors="replace")
             if text == "\t\n":
                 value = "".join(line)
-                if self.output:
-                    sys.stdout.write(value)
                 self.parse_call(value)
                 line = []
                 continue
+            elif self.output:
+                sys.stdout.write(text)
             if self.log4j2.is_line(text):
                 line = [text]
             elif line:
