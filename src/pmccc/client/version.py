@@ -112,9 +112,9 @@ class version_data:
             if "natives" in item:
                 if self.info.os not in item["natives"]:
                     continue
-                path = item["downloads"]["classifiers"][item["natives"][self.info.os]][
-                    "path"
-                ]
+                split = _name.split(item["name"])
+                split[3] = item["natives"][self.info.os]
+                path = _name.to_path(*split)
                 native.append(path if cwd is None else os.path.join(cwd, path))
             else:
                 # 可能会有相同的库,比较版本号
