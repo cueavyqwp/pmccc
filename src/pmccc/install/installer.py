@@ -7,6 +7,7 @@ from __future__ import annotations
 from urllib import parse as _parse
 import typing
 import json
+import os
 
 from ..lib import rules
 from ..lib.info import sysinfo
@@ -135,3 +136,43 @@ class installer_manager:
                     # 其它特例遇见再说
                     raise NotImplementedError
         return libraries
+
+    def get_assets_index(
+        self, version: version_data, assets: str | None = None
+    ) -> dict[str, typing.Any]:
+        if assets:
+            to = os.path.join(assets, "indexes", version.data["assets"] + ".json")
+            _path.check_dir(to, parent=True)
+        else:
+            to = None
+        response = requests.get(
+            self.mirror.parse(version.data["assetIndex"]["url"]), headers=self.header
+        )
+        if not response.ok:
+            raise PmcccResponseError(response)
+        data = response.json()
+        if to is not None:
+            with open(to, "w", encoding="utf-8") as fp:
+                json.dump(data, fp, indent=4, ensure_ascii=False)
+        return data
+
+    def get_assets_object(
+        self, index: str | dict[str, typing.Any], assets: str | None = None
+    ) -> dict[str, download_item]:
+        ret: dict[str, download_item] = {}
+        if isinstance(index, str):
+            with open(index, "r", encoding="utf-8") as fp:
+                data = json.load(fp)
+        else:
+            data = index
+        for path, value in data["objects"].items():
+            file_hash: str = value["hash"]
+            uri = os.path.join(file_hash[:2], file_hash)
+            if assets is not None:
+                path = os.path.join(assets, "objects", uri)
+            ret[path] = download_item(
+                self.mirror.urls["assets"] + uri,
+                value["size"],
+                file_hash,
+            )
+        return ret
