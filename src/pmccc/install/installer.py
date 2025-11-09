@@ -23,9 +23,9 @@ if typing.TYPE_CHECKING:
     from ..client import version_data
 
 
-class installer_manager:
+class installer:
     """
-    安装管理器
+    安装器
     """
 
     def __init__(
@@ -34,21 +34,26 @@ class installer_manager:
         self.mirror = _mirror.mirror_base() if mirror is None else mirror
         self.header = header
 
-    def get_version(self) -> dict[str, typing.Any]:
-        response = requests.get(self.mirror.urls["version"], headers=self.header)
+    def get_version(self, unlisted: bool = False) -> dict[str, typing.Any]:
+        response = requests.get(
+            self.mirror.urls["version-unlisted" if unlisted else "version"],
+            headers=self.header,
+        )
         if not response.ok:
             raise PmcccResponseError(response)
         return response.json()
 
     def get_version_json(
-        self, url: str, to: str | None = None
+        self,
+        url: str,
+        to: str | None = None,
     ) -> dict[str, typing.Any]:
         response = requests.get(self.mirror.parse(url), headers=self.header)
         if not response.ok:
             raise PmcccResponseError(response)
         data = response.json()
         if to is not None:
-            _path.check_dir(to)
+            _path.check_dir(to, parent=True)
             with open(to, "w", encoding="utf-8") as fp:
                 json.dump(data, fp, indent=4, ensure_ascii=False)
         return data
@@ -78,10 +83,20 @@ class installer_manager:
             if "natives" in item:
                 if info.os not in item["natives"]:
                     continue
-                value = item["downloads"]["classifiers"][item["natives"][info.os]]
-                libraries[_name.get_path(item["name"])] = download_item(
-                    self.mirror.parse(value["url"]), value["size"], value["sha1"]
-                )
+                if "downloads" in item:
+                    value = item["downloads"]["classifiers"][item["natives"][info.os]]
+                    libraries[_name.get_path(item["name"])] = download_item(
+                        self.mirror.parse(value["url"]), value["size"], value["sha1"]
+                    )
+                else:
+                    split = _name.split(item["name"])
+                    split[3] = item["natives"][info.os]
+                    path = _name.to_path(*split)
+                    libraries[path] = download_item(
+                        self.mirror.parse(
+                            os.path.join(self.mirror.urls["libraries"], path)
+                        )
+                    )
             else:
                 name = item["name"]
                 if "downloads" in item:
@@ -124,7 +139,7 @@ class installer_manager:
                         _parse.urlunparse(parse._replace(path=parse.path + f"/{path}"))
                     )
                     libraries[path] = download_item(url)
-                elif "net.fabricmc" in name or "ow2.asm" in name:
+                elif "net.fabricmc" in name:
                     # 给Fabric做兼容
                     path = _name.get_path(name)
                     parse = _parse.urlparse(self.mirror.urls["fabric"])
@@ -133,8 +148,13 @@ class installer_manager:
                     )
                     libraries[path] = download_item(url)
                 else:
-                    # 其它特例遇见再说
-                    raise NotImplementedError
+                    # 其余从其它maven仓库找
+                    path = _name.get_path(name)
+                    parse = _parse.urlparse(self.mirror.urls["maven"])
+                    url = self.mirror.parse(
+                        _parse.urlunparse(parse._replace(path=parse.path + f"/{path}"))
+                    )
+                    libraries[path] = download_item(url)
         return libraries
 
     def get_assets_index(
@@ -176,3 +196,12 @@ class installer_manager:
                 file_hash,
             )
         return ret
+
+
+class installer_manager:
+    """
+    安装管理器
+    """
+
+    def __init__(self) -> None:
+        pass

@@ -14,8 +14,10 @@ class mirror_base:
 
     urls = {
         "version": "http://launchermeta.mojang.com/mc/game/version_manifest_v2.json",
+        "version-unlisted": "https://zkitefly.github.io/unlisted-versions-of-minecraft/version_manifest.json",
         "assets": "http://resources.download.minecraft.net",
         "libraries": "https://libraries.minecraft.net",
+        "maven": "https://maven.aliyun.com/repository/public",
         "forge": "https://files.minecraftforge.net/maven",
         "fabric": "https://maven.fabricmc.net",
         "fabric-meta": "https://meta.fabricmc.net",
@@ -39,8 +41,10 @@ class mirror_bmclapi(mirror_base):
 
     urls = {
         "version": "https://bmclapi2.bangbang93.com/mc/game/version_manifest_v2.json",
+        "version-unlisted": "https://alist.8mi.tech/d/mirror/unlisted-versions-of-minecraft/Auto/version_manifest.json",
         "assets": "https://bmclapi2.bangbang93.com/assets",
         "libraries": "https://bmclapi2.bangbang93.com/maven",
+        "maven": "https://bmclapi2.bangbang93.com/maven",
         "forge": "https://bmclapi2.bangbang93.com/maven",
         "fabric": "https://bmclapi2.bangbang93.com/maven",
         "fabric-meta": "https://bmclapi2.bangbang93.com/fabric-meta",
@@ -90,6 +94,13 @@ class mirror_bmclapi(mirror_base):
                 parse._replace(
                     netloc="bmclapi2.bangbang93.com",
                     path=parse.path.replace("/releases", "/maven"),
+                )
+            )
+        elif parse.netloc == "zkitefly.github.io":
+            ret = urllib.parse.urlunparse(
+                parse._replace(
+                    netloc="alist.8mi.tech",
+                    path=f"/d/mirror/unlisted-versions-of-minecraft/Auto/{parse.path[32:]}",
                 )
             )
         return url if ret is None else ret
