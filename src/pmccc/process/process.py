@@ -20,6 +20,8 @@ else:
 
 from .log4j2 import log4j2_base
 
+import charset_normalizer
+
 
 class popen(subprocess.Popen[bytes]):
     """
@@ -72,34 +74,18 @@ class popen(subprocess.Popen[bytes]):
         """
         分出每行并调用log4j2类中的parse
         """
-        line: list[str] = []
         for text in iter(self.stdout.readline, ""):
-            text = text.decode("utf-8", errors="replace")
-            if text == "\t\n":
-                value = "".join(line)
-                self.parse_call(value)
-                line = []
-                continue
-            elif self.output:
+            encoding = charset_normalizer.detect(text)["encoding"]
+            if encoding is None:
+                encoding = "utf-8"
+            text = text.decode(encoding, errors="replace")
+            if self.log4j2:
+                self.log4j2.parse_call(text)
+                if not self.log4j2.is_output(text):
+                    # 非应输出内容,跳过输出
+                    continue
+            if self.output:
                 sys.stdout.write(text)
-            if self.log4j2 is None:
-                continue
-            if self.log4j2.is_line(text):
-                line = [text]
-            elif line:
-                line.append(text)
-
-    def parse_call(self, line: str) -> None:
-        """
-        调用log4j2类中的parse
-        """
-        if self.log4j2 is None:
-            return
-        try:
-            self.log4j2.parse(line)
-        except Exception as error:
-            if not self.ignore_parse_error:
-                raise error
 
     def exit(self) -> int:
         """
@@ -121,10 +107,7 @@ class popen(subprocess.Popen[bytes]):
                         char = msvcrt.getwch()
                         match char:
                             case "\r":
-                                self.stdin.write(
-                                    ("".join(buffer) + "\n").encode("utf-8")
-                                )
-                                self.stdin.flush()
+                                self.input_text("".join(buffer))
                                 buffer.clear()
                                 sys.stdout.write("\n")
                                 sys.stdout.flush()
@@ -139,13 +122,28 @@ class popen(subprocess.Popen[bytes]):
                                 sys.stdout.flush()
                     else:
                         time.sleep(0.05)
-                elif select.select([sys.stdin], [], [], 0.1)[0]:
+                elif select.select([sys.stdin], [], [], 0.05)[0]:
                     if text := sys.stdin.readline():
-                        self.stdin.write(text.encode("utf-8"))
-                        self.stdin.flush()
+                        self.input_text(text, end="")
             except (KeyboardInterrupt, EOFError):
                 self.stdin.close()
                 break
+
+    def input_text(
+        self,
+        *text: str,
+        sep: str = "\n",
+        end: str = "\n",
+        autoflush: bool = True,
+        encoding: str = "utf-8",
+    ) -> None:
+        """
+        向stdin插入文本
+        """
+        if self.stdin:
+            self.stdin.write((sep.join(text) + end).encode(encoding, errors="replace"))
+            if autoflush and (end.endswith("\n") or text[-1].endswith("\n")):
+                self.stdin.flush()
 
     def wait_input(self) -> int:
         """

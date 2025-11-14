@@ -14,7 +14,7 @@ import os
 from ..types import LOG_LEVEL_TYPE, LOG_LEVEL
 
 if typing.TYPE_CHECKING:
-    import subprocess
+    from .process import popen
 
 
 class loginfo:
@@ -46,17 +46,14 @@ class log4j2_base:
             if config is None or not os.path.isfile(config)
             else config
         )
-        self.popen: subprocess.Popen[bytes] | None = None
+        self.popen: popen | None = None
         self.info = info
 
-    def is_line(self, text: str) -> bool:
+    def is_output(self, text: str) -> bool:
         """
-        是否是可解析的一行
+        是否是可输出的一行
         """
-        split = text.split(": ", 1)
-        if len(split) < 2:
-            return False
-        return split[0].startswith("[") and split[0].endswith("]")
+        return text != "\t\n"
 
     def split(self, line: str) -> tuple[loginfo, str]:
         """
@@ -64,6 +61,27 @@ class log4j2_base:
         """
         head, text = line.split(": ", 1)
         return self.info(head), text
+
+    def parse_call(self, text: str) -> None:
+        """
+        解析时调用
+        """
+        # 不让子类继承lines
+        lines: list[str]
+        if hasattr(self, "lines"):
+            lines = getattr(self, "lines")
+        else:
+            lines = []
+        if text == "\t\n":
+            value = "".join(lines)
+            self.parse(value)
+            lines = []
+        split = text.split(": ", 1)
+        if len(split) >= 2 and split[0].startswith("[") and split[0].endswith("]"):
+            lines = [text]
+        elif lines:
+            lines.append(text)
+        setattr(self, "lines", lines)
 
     @abc.abstractmethod
     def parse(self, line: str) -> None:
