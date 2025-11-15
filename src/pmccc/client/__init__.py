@@ -8,3 +8,4 @@ from .namepath import *
 from .version import *
 from .player import *
 from .native import *
+from .assets import *

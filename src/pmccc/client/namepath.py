@@ -65,7 +65,10 @@ class name:
         """
         获取不带版本的namepath
         """
-        return ":".join((self.package, self.name, self.version))
+        ret = ":".join((self.package, self.name))
+        if self.platform:
+            ret += f":{self.platform}"
+        return ret
 
     def compare(self, first: str, second: str) -> bool:
         """

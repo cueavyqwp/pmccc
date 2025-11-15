@@ -242,11 +242,18 @@ class version_manager:
         return os.path.basename(self.file)
 
     @property
+    def jarname(self) -> str:
+        """
+        版本jar名称
+        """
+        return os.path.splitext(self.filename)[0] + ".jar"
+
+    @property
     def jarfile(self) -> str:
         """
-        版本jar文件名称
+        版本jar文件
         """
-        return os.path.join(self.dirname, os.path.splitext(self.filename)[0] + ".jar")
+        return os.path.join(self.dirname, self.jarname)
 
     @property
     def nativename(self) -> str:
