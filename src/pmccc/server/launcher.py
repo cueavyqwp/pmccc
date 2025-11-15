@@ -4,11 +4,13 @@
 
 __all__ = ["server_launcher"]
 
+import collections.abc
 import typing
 import os
 
 from ..lib import java as _java
 from ..lib import sysinfo
+
 from .. import process
 
 
@@ -28,7 +30,7 @@ class server_launcher:
         self.log4j2 = log4j2
         self.cwd = cwd
 
-    def search_java(self, dirs: list[str] | None = None) -> None:
+    def search_java(self, dirs: collections.abc.Iterable[str] | None = None) -> None:
         """
         寻找Java,默认从环境变量中找
         """

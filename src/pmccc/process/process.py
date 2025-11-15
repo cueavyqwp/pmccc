@@ -18,8 +18,9 @@ if os.name == "nt":
 else:
     import select
 
-from .log4j2 import log4j2_base
 from ..utils import daemon as _daemon
+
+from .log4j2 import log4j2_base
 
 import charset_normalizer
 

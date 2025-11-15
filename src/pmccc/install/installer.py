@@ -13,8 +13,10 @@ from ..lib import rules
 from ..lib.info import sysinfo
 from ..lib import path as _path
 from ..lib import mirror as _mirror
-from ..client import namepath as _name
 from ..lib.network import download_item
+
+from ..client.namepath import name as _namepath
+
 from ..types import HEADER, PmcccResponseError
 
 import requests
@@ -88,13 +90,11 @@ class installer:
                     continue
                 if "downloads" in item:
                     value = item["downloads"]["classifiers"][item["natives"][info.os]]
-                    libraries[_name.get_path(item["name"])] = download_item(
+                    libraries[_namepath(item["name"]).get_path()] = download_item(
                         self.mirror.parse(value["url"]), value["size"], value["sha1"]
                     )
                 else:
-                    split = _name.split(item["name"])
-                    split[3] = item["natives"][info.os]
-                    path = _name.to_path(*split)
+                    path = _namepath(item["name"], item["natives"][info.os]).get_path()
                     libraries[path] = download_item(
                         self.mirror.parse(
                             os.path.join(self.mirror.urls["libraries"], path)
@@ -102,7 +102,7 @@ class installer:
                     )
             else:
                 name = item["name"]
-                path = _name.get_path(name)
+                path = _namepath(name).get_path()
                 if "downloads" in item:
                     value = item["downloads"]["artifact"]
                     url = value["url"]
@@ -128,7 +128,7 @@ class installer:
                     )
                 elif "optifine" in name:
                     # optifine官网下载需要看广告,虽然应该可以通过写爬虫来绕过,但是还是直接用镜像吧
-                    text = _name.split(name)[2]
+                    text = _namepath(name).version
                     mcversion, _, _, patch = text.split("_")
                     libraries[path] = download_item(
                         self.mirror.parse(
@@ -143,7 +143,7 @@ class installer:
                     libraries[path] = download_item(url)
                 elif "net.fabricmc" in name:
                     # 给Fabric做兼容
-                    path = _name.get_path(name)
+                    path = _namepath(name).get_path()
                     parse = _parse.urlparse(self.mirror.urls["fabric"])
                     url = self.mirror.parse(
                         _parse.urlunparse(parse._replace(path=parse.path + f"/{path}"))
@@ -151,7 +151,7 @@ class installer:
                     libraries[path] = download_item(url)
                 else:
                     # 其余从其它maven仓库找
-                    path = _name.get_path(name)
+                    path = _namepath(name).get_path()
                     parse = _parse.urlparse(self.mirror.urls["maven"])
                     url = self.mirror.parse(
                         _parse.urlunparse(parse._replace(path=parse.path + f"/{path}"))

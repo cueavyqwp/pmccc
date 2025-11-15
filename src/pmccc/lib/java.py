@@ -4,6 +4,7 @@
 
 __all__ = ["java_info", "java_manager"]
 
+import collections.abc
 import subprocess
 import threading
 import typing
@@ -13,12 +14,14 @@ import os
 from . import sysinfo
 from . import config
 from . import path as _path
+
 from .verify import to_hash
+
 from ..types import PmcccJavaNotFoundError
 
 
 def select_java(
-    version: int = 8, available: list[int] | tuple[int, ...] | None = None
+    version: int = 8, available: collections.abc.Iterable[int] | None = None
 ) -> list[int]:
     """
     根据传入的Java版本返回可选的Java版本
@@ -91,7 +94,7 @@ class java_manager(config.config_base):
 
     def __init__(
         self,
-        path: list[str] | None = None,
+        path: collections.abc.Iterable[str] | None = None,
         info: sysinfo | None = None,
         selector: typing.Callable[[int, list[int]], list[int]] = select_java,
     ) -> None:
@@ -199,7 +202,7 @@ class java_manager(config.config_base):
         arch = "x86" if arch == "32" else f"x{arch}"
         return java_info(target, version, arch, jdk)
 
-    def search(self, dirs: list[str] | None = None) -> None:
+    def search(self, dirs: collections.abc.Iterable[str] | None = None) -> None:
         """
         通过文件夹找Java(非遍历)
 

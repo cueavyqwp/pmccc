@@ -16,9 +16,10 @@ import hashlib
 import urllib.parse
 import uuid as _uuid
 
-from ..types import SKIN_DEFAULT_TYPE, SKIN_ARM_TYPE, SKIN_DEFAULT, PmcccResponseError
 from ..lib import config
 from ..lib.verify import to_hash
+
+from ..types import SKIN_DEFAULT_TYPE, SKIN_ARM_TYPE, SKIN_DEFAULT, PmcccResponseError
 
 import requests
 

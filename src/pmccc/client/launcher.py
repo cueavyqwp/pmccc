@@ -4,17 +4,20 @@
 
 from __future__ import annotations
 
-__all__ = ["client_launcher_info", "client_lanucher_config", "client_launcher"]
+import collections.abc
+import typing
 
-from .player import player_base, player_manager
+__all__ = ["client_launcher_info", "client_lanucher_config", "client_launcher"]
 
 from ..pmccc import __version__
 from ..lib import sysinfo
 from ..lib import config
 from ..lib import java
+
 from .. import process
 
-import typing
+from .player import player_base, player_manager
+
 
 if typing.TYPE_CHECKING:
     from .minecraft import minecraft_manager
@@ -72,7 +75,7 @@ class client_launcher:
         self.sysinfo = sysinfo()
         self.java = java.java_manager()
 
-    def search_java(self, dirs: list[str] | None = None) -> None:
+    def search_java(self, dirs: collections.abc.Iterable[str] | None = None) -> None:
         """
         寻找Java,默认从环境变量中找
 

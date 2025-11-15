@@ -7,6 +7,7 @@ from __future__ import annotations
 __all__ = ["version_data", "version_manager"]
 
 import typing
+import shlex
 import json
 import os
 import re
@@ -16,9 +17,10 @@ from ..lib import sysinfo
 from ..lib import java as _java
 from ..lib import path as _path
 
-from . import namepath as _name
 from . import player as _player
 from . import native as _native
+
+from .namepath import name as _namepath
 
 if typing.TYPE_CHECKING:
     from .launcher import client_launcher_info
@@ -70,7 +72,9 @@ class version_data:
                 "-Dminecraft.launcher.version=${launcher_version}",
                 "-cp",
                 "${classpath}",
-            ], self.data["minecraftArguments"].split(" ")
+            ][0 if self.info.os == "windows" else 1 :], shlex.split(
+                self.data["minecraftArguments"]
+            )
         data = self.data["arguments"]
         arg_game: list[str] = []
         arg_jvm: list[str] = []
@@ -103,7 +107,7 @@ class version_data:
         cwd: libraries文件夹位置,为空返回相对路径
         """
         native: list[str] = []
-        library: dict[str, str] = {}
+        library: dict[str, _namepath] = {}
         optifine: str | None = None
         ret: list[str] = []
         for item in self.data["libraries"]:
@@ -112,26 +116,22 @@ class version_data:
             if "natives" in item:
                 if self.info.os not in item["natives"]:
                     continue
-                split = _name.split(item["name"])
-                split[3] = item["natives"][self.info.os]
-                path = _name.to_path(*split)
+                path = _namepath(item["name"], item["natives"][self.info.os]).get_path()
                 native.append(path if cwd is None else os.path.join(cwd, path))
             else:
                 # 可能会有相同的库,比较版本号
-                name = item["name"]
+                namepath = _namepath(item["name"])
                 # optifine放最后
-                if "optifine" in name:
-                    optifine = _name.get_path(name)
+                if "optifine" in item["name"]:
+                    optifine = namepath.get_path()
                     continue
-                split = _name.split(item["name"])
-                value = split.pop(2)
-                key = ":".join(split)
-                if key not in library or _name.compare(value, library[key][0]):
-                    library[key] = value
+                key = namepath.get_key()
+                if key in library:
+                    library[key] |= namepath
+                else:
+                    library[key] = namepath
         for key, value in library.items():
-            split = key.split(":")
-            split.insert(2, value)
-            path = _name.to_path(*split)
+            path = value.get_path()
             ret.append(path if cwd is None else os.path.join(cwd, path))
         if optifine is not None:
             ret.append(optifine if cwd is None else os.path.join(cwd, optifine))
@@ -214,7 +214,7 @@ class version_data:
             "${classpath_separator}": self.info.split,
         }
         if replacement is not None:
-            data.update(replacement)
+            data |= replacement
         for item in args:
             for key in re.findall("(\\$\\{\\w*\\})", item):
                 if key in data:

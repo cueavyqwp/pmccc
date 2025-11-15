@@ -7,6 +7,7 @@ __all__ = ["minecraft_manager"]
 import os
 
 from ..lib import path as _path
+
 from .version import version_manager
 
 
