@@ -202,6 +202,7 @@ class version_data:
             "${assets_index_name}": (
                 self.data["assets"] if "assets" in self.data else "pre-1.6"
             ),
+            "${game_assets}": os.path.join(assets_directory, "virtual", "legacy"),
             "${auth_uuid}": player.uuid,
             "${auth_access_token}": str(player.access_token),
             "${user_type}": player.type,
