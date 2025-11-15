@@ -19,6 +19,7 @@ else:
     import select
 
 from .log4j2 import log4j2_base
+from ..utils import daemon as _daemon
 
 import charset_normalizer
 
@@ -68,7 +69,10 @@ class popen(subprocess.Popen[bytes]):
         self.parse_thread = threading.Thread(target=self.parse, daemon=True)
         self.parse_thread.start()
         if daemon:
+            # 处理Ctrl-C等正常退出
             atexit.register(self.exit)
+            # 主进程意外终止时兜底
+            _daemon.add_daemon(os.getpid(), self.pid)
 
     def parse(self):
         """
