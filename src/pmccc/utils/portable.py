@@ -90,10 +90,14 @@ def export(
             "#!/bin/bash",
             "CWD=$(dirname $0)",
             f'cd "$CWD"',
-            shlex.join(args)
-            .replace("{path}", "${CWD}")
-            .replace(" '", ' "')
-            .replace("' ", '" '),
+            " ".join(
+                (
+                    f'"{value.replace('"','\\"')}"'
+                    if "{path}" in value
+                    else shlex.quote(value)
+                )
+                for value in args
+            ).replace("{path}", "${CWD}"),
         ]
         with open(os.path.join(to, "run.sh"), "w", encoding="utf-8") as fp:
             for line in lines:
