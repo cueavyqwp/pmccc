@@ -6,6 +6,7 @@ __all__ = ["sysinfo"]
 
 import platform
 import typing
+import locale
 
 import psutil
 
@@ -41,6 +42,28 @@ class sysinfo:
         系统文件分隔符
         """
         return ";" if self.os == "windows" else ":"
+
+    @property
+    def loacal_upper(self) -> str:
+        """
+        获取系统语言代码(地区大写)
+        """
+        try:
+            code = __import__("_locale")._getdefaultlocale()[0]
+            if code and code[:2] == "0x":
+                code = locale.windows_locale[int(code, 0)]
+        except (ModuleNotFoundError, AttributeError):
+            code = locale.getlocale()[0]
+        if code is None:
+            raise ValueError
+        return code.replace("-", "_", 1)
+
+    @property
+    def loacal(self) -> str:
+        """
+        获取系统语言(全小写)
+        """
+        return self.loacal_upper.lower()
 
     @property
     def native(self) -> str:
