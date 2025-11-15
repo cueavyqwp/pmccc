@@ -92,7 +92,7 @@ def export(
             f'cd "$CWD"',
             " ".join(
                 (
-                    f'"{value.replace('"','\\"')}"'
+                    f'\"{value.replace('"','\\"')}\"'
                     if "{path}" in value
                     else shlex.quote(value)
                 )
