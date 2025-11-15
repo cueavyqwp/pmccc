@@ -36,11 +36,9 @@ class popen(subprocess.Popen[bytes]):
         cwd: str | None = None,
         output: bool = True,
         log4j2: log4j2_base | None = None,
-        ignore_parse_error: bool = True,
         force_utf8: bool = True,
         daemon: bool = True,
     ) -> None:
-        self.ignore_parse_error = ignore_parse_error
         self.log4j2 = log4j2
         self.output = output
         if log4j2 is not None:

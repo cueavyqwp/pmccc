@@ -339,12 +339,13 @@ class version_manager:
         custom_game: list[str] | None = None,
         main_class: str | None = None,
         replacement: typing.Optional[dict[str, typing.Any]] = None,
+        features: typing.Optional[dict[str, bool]] = None,
         force_utf8: bool = True,
     ) -> list[typing.Any]:
         """
         获取启动参数
         """
-        jvm, game = self.version.get_args()
+        jvm, game = self.version.get_args(features)
         if library is None:
             library = self.version.get_libraries(libraries_directory)[0]
         if custom_jvm is not None:

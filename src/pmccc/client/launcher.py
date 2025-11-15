@@ -93,6 +93,7 @@ class client_launcher:
         custom_game: list[str] | None = None,
         main_class: str | None = None,
         replacement: dict[str, typing.Any] | None = None,
+        features: typing.Optional[dict[str, bool]] = None,
         force_utf8: bool = True,
     ) -> list[typing.Any]:
         """
@@ -114,6 +115,8 @@ class client_launcher:
 
         replacement: 替换参数中"${键名}"
 
+        features: 启用特性
+
         force_utf8: 强制使用utf-8编码
         """
         return version.get_args(
@@ -127,6 +130,7 @@ class client_launcher:
             custom_game,
             main_class,
             replacement,
+            features,
             force_utf8,
         )
 
@@ -139,10 +143,10 @@ class client_launcher:
         custom_game: list[str] | None = None,
         main_class: str | None = None,
         replacement: dict[str, typing.Any] | None = None,
+        features: typing.Optional[dict[str, bool]] = None,
         force_utf8: bool = True,
         output: bool = True,
         log4j2: process.log4j2_base | None = None,
-        ignore_parse_error: bool = True,
         daemon: bool = True,
     ) -> process.popen:
         """
@@ -162,7 +166,7 @@ class client_launcher:
 
         replacement: 替换参数中"${键名}"
 
-        force_utf8: 强制使用utf-8编码
+        features: 启用特性
 
         output: 是否在命令行输出
 
@@ -188,12 +192,12 @@ class client_launcher:
                 custom_game,
                 main_class,
                 replacement,
+                features,
                 False,
             ),
             version.dirname,
             output,
             log4j2,
-            ignore_parse_error,
             force_utf8,
             daemon,
         )
