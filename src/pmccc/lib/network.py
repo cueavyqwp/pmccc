@@ -28,6 +28,7 @@ class download_item:
         url: str,
         size: int = -1,
         hasher: str | verify.verify_hash | None = None,
+        to: str | None = None,
     ) -> None:
         """
         下载项
@@ -39,10 +40,13 @@ class download_item:
         size: 文件大小(Bytes),-1为未知大小
 
         hasher: verify_hash或哈希值字符串,为None不校验
+
+        to: 目标地址,默认为空
         """
         self.hasher = verify.verify_hash(hasher) if isinstance(hasher, str) else hasher
         self.size = size
         self.url = url
+        self.to = to
 
 
 class download_task(config_base):
@@ -53,10 +57,15 @@ class download_task(config_base):
     def __init__(
         self,
         item: download_item,
-        to: str,
         name: str = "",
+        to: str | None = None,
         header: dict[str, str] = HEADER,
     ) -> None:
+        if to is None:
+            if item.to is None:
+                raise ValueError
+            else:
+                to = item.to
         if name:
             to = os.path.join(to, name)
         self.to = _path.format_abspath(to)

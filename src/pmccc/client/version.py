@@ -20,7 +20,7 @@ from ..lib import path as _path
 from . import player as _player
 from . import native as _native
 
-from .namepath import name as _namepath
+from .library import library_data
 
 if typing.TYPE_CHECKING:
     from .launcher import client_launcher_info
@@ -100,41 +100,40 @@ class version_data:
                 arg_jvm += item["value"]
         return arg_jvm, arg_game
 
-    def get_libraries(self, cwd: str | None = None) -> tuple[list[str], list[str]]:
+    def get_libraries(
+        self, libraries: str | None = None
+    ) -> tuple[list[str], list[str]]:
         """
         获取库与native列表
 
-        cwd: libraries文件夹位置,为空返回相对路径
+        libraries: libraries文件夹位置,为空返回相对路径
         """
         native: list[str] = []
-        library: dict[str, _namepath] = {}
-        optifine: str | None = None
+        library: dict[str, library_data] = {}
+        optifine: library_data | None = None
         ret: list[str] = []
         for item in self.data["libraries"]:
             if "rules" in item and not rules.check(item["rules"], info=self.info):
                 continue
-            if "natives" in item:
+            data = library_data(item, self.info)
+            if data.is_native():
                 if self.info.os not in item["natives"]:
                     continue
-                path = _namepath(item["name"], item["natives"][self.info.os]).get_path()
-                native.append(path if cwd is None else os.path.join(cwd, path))
+                native.append(data.get_path(libraries))
             else:
-                # 可能会有相同的库,比较版本号
-                namepath = _namepath(item["name"])
                 # optifine放最后
                 if "optifine" in item["name"]:
-                    optifine = namepath.get_path()
+                    optifine = data
                     continue
-                key = namepath.get_key()
+                key = data.name.get_key()
                 if key in library:
-                    library[key] |= namepath
+                    library[key].name |= data.name
                 else:
-                    library[key] = namepath
-        for key, value in library.items():
-            path = value.get_path()
-            ret.append(path if cwd is None else os.path.join(cwd, path))
+                    library[key] = data
+        for value in library.values():
+            ret.append(value.get_path(libraries))
         if optifine is not None:
-            ret.append(optifine if cwd is None else os.path.join(cwd, optifine))
+            ret.append(optifine.get_path(libraries))
         return ret, native
 
     def get_jar(self) -> str:

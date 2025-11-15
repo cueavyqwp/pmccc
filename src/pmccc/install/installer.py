@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-from urllib import parse as _parse
 import typing
 import json
 import os
@@ -15,7 +14,7 @@ from ..lib import path as _path
 from ..lib import mirror as _mirror
 from ..lib.network import download_item
 
-from ..client.namepath import name as _namepath
+from ..client.library import library_data
 
 from ..types import HEADER, PmcccResponseError
 
@@ -75,93 +74,18 @@ class installer:
     def get_libraries(
         self,
         version: version_data,
-        library: str | None = None,
+        libraries: str | None = None,
         info: sysinfo | None = None,
-    ) -> dict[str, download_item]:
+    ) -> list[download_item]:
         if info is None:
             info = sysinfo()
-        libraries: dict[str, download_item] = {}
-        data: list[dict[str, typing.Any]] = version.data["libraries"]
-        for item in data:
+        ret: list[download_item] = []
+        for item in version.data["libraries"]:
             if "rules" in item and not rules.check(item["rules"], info=info):
                 continue
-            if "natives" in item:
-                if info.os not in item["natives"]:
-                    continue
-                if "downloads" in item:
-                    value = item["downloads"]["classifiers"][item["natives"][info.os]]
-                    libraries[_namepath(item["name"]).get_path()] = download_item(
-                        self.mirror.parse(value["url"]), value["size"], value["sha1"]
-                    )
-                else:
-                    path = _namepath(item["name"], item["natives"][info.os]).get_path()
-                    libraries[path] = download_item(
-                        self.mirror.parse(
-                            os.path.join(self.mirror.urls["libraries"], path)
-                        )
-                    )
-            else:
-                name = item["name"]
-                path = _namepath(name).get_path()
-                if "downloads" in item:
-                    value = item["downloads"]["artifact"]
-                    url = value["url"]
-                    # forge,你是怎么做到有哈希值和文件大小,url却为空的
-                    if not url:
-                        if "minecraftforge" in name:
-                            # forge的maven里找不到这个jar,但bmclapi却能找到
-                            parse = _parse.urlparse(
-                                "https://bmclapi2.bangbang93.com/maven"
-                            )
-                            url = self.mirror.parse(
-                                _parse.urlunparse(
-                                    parse._replace(path=parse.path + f"/{path}")
-                                )
-                            )
-                        else:
-                            # 其它特例遇见再说
-                            raise NotImplementedError
-                    libraries[path] = download_item(
-                        self.mirror.parse(url),
-                        value["size"] if "size" in value else -1,
-                        value["sha1"] if "sha1" in value else None,
-                    )
-                elif "optifine" in name:
-                    # optifine官网下载需要看广告,虽然应该可以通过写爬虫来绕过,但是还是直接用镜像吧
-                    text = _namepath(name).version
-                    mcversion, _, _, patch = text.split("_")
-                    libraries[path] = download_item(
-                        self.mirror.parse(
-                            f"https://bmclapi2.bangbang93.com/optifine/{mcversion}/HD_U/{patch}"
-                        )
-                    )
-                elif "net.minecraft" in name:
-                    parse = _parse.urlparse(self.mirror.urls["libraries"])
-                    url = self.mirror.parse(
-                        _parse.urlunparse(parse._replace(path=parse.path + f"/{path}"))
-                    )
-                    libraries[path] = download_item(url)
-                elif "net.fabricmc" in name:
-                    # 给Fabric做兼容
-                    path = _namepath(name).get_path()
-                    parse = _parse.urlparse(self.mirror.urls["fabric"])
-                    url = self.mirror.parse(
-                        _parse.urlunparse(parse._replace(path=parse.path + f"/{path}"))
-                    )
-                    libraries[path] = download_item(url)
-                else:
-                    # 其余从其它maven仓库找
-                    path = _namepath(name).get_path()
-                    parse = _parse.urlparse(self.mirror.urls["maven"])
-                    url = self.mirror.parse(
-                        _parse.urlunparse(parse._replace(path=parse.path + f"/{path}"))
-                    )
-                    libraries[path] = download_item(url)
-        if library is not None:
-            return {
-                os.path.join(library, path): item for path, item in libraries.items()
-            }
-        return libraries
+            lib = library_data(item, info)
+            ret.append(lib.get_download(libraries, self.mirror))
+        return ret
 
     def get_assets_index(
         self, version: version_data, assets: str | None = None

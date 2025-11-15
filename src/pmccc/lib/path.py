@@ -38,7 +38,7 @@ def check_dir(path: str, mkdir: bool = True, parent: bool = False) -> bool:
         path = os.path.dirname(path)
     if os.path.exists(path):
         return True
-    if mkdir:
+    if mkdir and not os.path.isdir(path):
         os.makedirs(path)
     return False
 
