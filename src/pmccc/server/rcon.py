@@ -31,13 +31,13 @@ class rcon_client:
     def __init__(
         self, server: str = "127.0.0.1", port: int = 25575, password: str = ""
     ) -> None:
-        self.lastsend = 0.0
         self.password = password
         self.server = server
         self.port = port
+        self.lastsend = 0.0
         self.socket = socket.socket()
         self.thread = threading.Thread(target=self.recv_func, daemon=True)
-        self.id: dict[int, typing.Callable[[str], typing.Any]] = {}
+        self.id: dict[int, typing.Callable[[str], typing.Any] | None] = {}
 
     def __enter__(self) -> "rcon_client":
         self.connect()
@@ -80,7 +80,7 @@ class rcon_client:
         return self.recv_packet()[2]
 
     def command_call(
-        self, command: str, func: typing.Callable[[str], typing.Any]
+        self, command: str, func: typing.Callable[[str], typing.Any] | None = None
     ) -> int:
         """
         将函数添加进等待列表中,得到回复时调用函数
@@ -110,7 +110,9 @@ class rcon_client:
                 break
             if req_id not in self.id or p_type != SERVERDATA_RESPONSE_VALUE:
                 continue
-            self.id.pop(req_id)(body)
+            func = self.id.pop(req_id)
+            if func:
+                func(body)
 
     def read(self, length: int) -> bytes:
         data = b""
