@@ -21,9 +21,7 @@ class server_launcher:
         cwd: str,
         args: list[typing.Any] | None = None,
         log4j2: process.log4j2_base | None = None,
-        ignore_parse_error: bool = False,
     ) -> None:
-        self.ignore_parse_error = ignore_parse_error
         self.args = [] if args is None else args
         self.java = _java.java_manager()
         self.info = sysinfo()
@@ -51,9 +49,5 @@ class server_launcher:
         启动服务端
         """
         return process.popen(
-            [java, *self.args],
-            self.cwd,
-            output=output,
-            log4j2=self.log4j2,
-            ignore_parse_error=self.ignore_parse_error,
+            [java, *self.args], self.cwd, output=output, log4j2=self.log4j2
         )
