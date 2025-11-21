@@ -11,11 +11,10 @@ __all__ = [
 ]
 
 import threading
-import random
 import typing
 import socket
 import struct
-import time
+import queue
 
 SERVERDATA_AUTH = 3
 SERVERDATA_EXECCOMMAND = 2
@@ -29,20 +28,47 @@ class rcon_client:
     """
 
     def __init__(
-        self, server: str = "127.0.0.1", port: int = 25575, password: str = ""
+        self,
+        server: str = "127.0.0.1",
+        port: int = 25575,
+        password: str = "",
+        reconnect: int = 3,
     ) -> None:
+        self.reconnect = reconnect
         self.password = password
         self.server = server
         self.port = port
         self.lastsend = 0.0
+        self.lock = threading.Lock()
         self.socket = socket.socket()
+        self.event = threading.Event()
         self.thread = threading.Thread(target=self.recv_func, daemon=True)
-        self.id: dict[int, typing.Callable[[str], typing.Any] | None] = {}
+        self.queue: queue.Queue[
+            tuple[str, typing.Callable[[str], typing.Any] | None]
+        ] = queue.Queue()
+        self.socket.settimeout(30)
+        self.thread.start()
+
+    @property
+    def ok(self) -> bool:
+        """
+        是否处于连接状态
+        """
+        try:
+            timeout = self.socket.gettimeout()
+            self.socket.settimeout(0)
+            try:
+                data = self.socket.recv(1, socket.MSG_PEEK)
+                return data != b""
+            except BlockingIOError:
+                return True
+            finally:
+                self.socket.settimeout(timeout)
+        except:
+            return False
 
     def __enter__(self) -> "rcon_client":
-        self.connect()
-        if not self.login():
-            raise ConnectionError
+        self.ensure_connect()
         return self
 
     def __exit__(self, *_) -> None:
@@ -51,84 +77,100 @@ class rcon_client:
         except:
             pass
 
-    def connect(
-        self,
-    ) -> None:
+    def connect(self) -> int | bool:
         """
-        建立socket连接,执行后还需要login
+        建立socket连接,成功时返回True
         """
-        self.socket.connect((self.server, self.port))
+        try:
+            self.socket.connect((self.server, self.port))
+        except socket.error as e:
+            ret = e.errno
+            return -1 if ret is None else ret
+        self.send_packet(0, SERVERDATA_AUTH, self.password, False)
+        req_id, p_type, _ = self.recv_packet(False)
+        if p_type != SERVERDATA_AUTH_RESPONSE or req_id != 0:
+            return -2
+        return True
 
     def disconnect(self) -> None:
         """
         关闭socket连接
         """
+        self.event.set()
+        while not self.queue.empty():
+            self.queue.get(False)
         self.socket.close()
 
-    def login(self) -> bool:
+    def ensure_connect(self) -> None:
         """
-        发送登录请求,返回登录是否成功
+        确保处于连接状态
         """
-        self.send_packet(0, SERVERDATA_AUTH, self.password)
-        return self.recv_packet()[0] == 0
+        if self.ok:
+            return
+        reconnect = self.reconnect
+        with self.lock:
+            ret = self.connect()
+            while (not self.ok) and (reconnect < 0 or reconnect > 0):
+                if (ret := self.connect()) is True:
+                    break
+                if reconnect > 0:
+                    reconnect -= 1
+            if ret is not True:
+                raise ConnectionError(ret)
 
-    def command(self, command: str, req_id: int = 0) -> str:
+    def command(self, command: str) -> str:
         """
-        发送命令,无需指定请求ID,因此仅推荐在单线程时使用
+        发送命令
         """
-        self.send_packet(req_id, SERVERDATA_EXECCOMMAND, command)
+        self.send_packet(0, SERVERDATA_EXECCOMMAND, command)
         return self.recv_packet()[2]
 
     def command_call(
         self, command: str, func: typing.Callable[[str], typing.Any] | None = None
-    ) -> int:
+    ) -> None:
         """
         将函数添加进等待列表中,得到回复时调用函数
         """
-        req_id: int | None = None
-        while req_id is None or req_id in self.id:
-            req_id = random.randint(0, 2147483647)
-        wait = 0.001 - time.time() + self.lastsend
-        if wait > 0:
-            time.sleep(wait)
-        self.send_packet(req_id, SERVERDATA_EXECCOMMAND, command)
-        self.lastsend = time.time()
-        self.id[req_id] = func
-        return req_id
-
-    def recv_thred(self) -> None:
-        """
-        启动接收线程
-        """
-        self.thread.start()
+        self.queue.put((command, func))
 
     def recv_func(self) -> None:
-        while True:
+        while not self.event.is_set():
             try:
-                req_id, p_type, body = self.recv_packet()
-            except socket.error:
-                break
-            if req_id not in self.id or p_type != SERVERDATA_RESPONSE_VALUE:
+                command, func = self.queue.get(timeout=0.1)
+            except queue.Empty:
                 continue
-            func = self.id.pop(req_id)
-            if func:
-                func(body)
+            with self.lock:
+                try:
+                    ret = self.command(command)
+                except Exception as e:
+                    ret = f"Python Error: {repr(e)}"
+                if func:
+                    func(ret)
 
-    def read(self, length: int) -> bytes:
+    def read(self, length: int, ensure_connect: bool = True) -> bytes:
+        if ensure_connect:
+            self.ensure_connect()
         data = b""
         while len(data) < length:
-            data += self.socket.recv(length - len(data))
+            chunk = self.socket.recv(length - len(data))
+            if chunk == b"":
+                raise ConnectionError
+            data += chunk
         return data
 
-    def send_packet(self, req_id: int, p_type: int, body: str):
+    def send_packet(
+        self, req_id: int, p_type: int, body: str, ensure_connect: bool = True
+    ):
+        if ensure_connect:
+            self.ensure_connect()
         data = body.encode("utf8") + b"\x00\x00"
         length = len(data) + 8
         packet = struct.pack("<iii", length, req_id, p_type) + data
         self.socket.sendall(packet)
 
-    def recv_packet(self) -> tuple[int, int, str]:
-        length = struct.unpack("<i", self.read(4))[0]
-        data = self.read(length)
+    def recv_packet(self, ensure_connect: bool = True) -> tuple[int, int, str]:
+        length = struct.unpack("<i", self.read(4, ensure_connect))[0]
+        data = self.read(length, ensure_connect)
         req_id, p_type = struct.unpack("<ii", data[:8])
-        body = data[8:-2].decode()
+        body = data[8:-2].decode("utf-8")
         return req_id, p_type, body
