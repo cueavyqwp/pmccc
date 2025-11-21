@@ -8,6 +8,7 @@ import subprocess
 import threading
 import typing
 import atexit
+import abc
 import sys
 import os
 
@@ -25,7 +26,7 @@ from .log4j2 import log4j2_base
 import charset_normalizer
 
 
-class popen(subprocess.Popen[bytes]):
+class popen_base(subprocess.Popen[bytes]):
     """
     自定义Popen类
     """
@@ -35,23 +36,9 @@ class popen(subprocess.Popen[bytes]):
         args: list[typing.Any],
         cwd: str | None = None,
         output: bool = True,
-        log4j2: log4j2_base | None = None,
-        force_utf8: bool = True,
         daemon: bool = True,
     ) -> None:
-        self.log4j2 = log4j2
         self.output = output
-        if log4j2 is not None:
-            args.insert(1, f"-Dlog4j.configurationFile={log4j2.config}")
-            log4j2.popen = self
-        if force_utf8 and "-Dfile.encoding=UTF-8" not in args:
-            args.insert(1, "-Dfile.encoding=UTF-8")
-        # 获取游戏所在目录
-        if cwd is None:
-            for index in range(len(args)):
-                if args[index] == "--gameDir":
-                    cwd = str(args[index + 1])
-                    break
         self.stdin: typing.IO[  # pyright: ignore[reportIncompatibleVariableOverride]
             bytes
         ]
@@ -75,20 +62,22 @@ class popen(subprocess.Popen[bytes]):
 
     def parse(self):
         """
-        分出每行并调用log4j2类中的parse
+        解析输出
         """
         for text in iter(self.stdout.readline, ""):
             encoding = charset_normalizer.detect(text)["encoding"]
             if encoding is None:
                 encoding = "utf-8"
             text = text.decode(encoding, errors="replace")
-            if self.log4j2:
-                self.log4j2.parse_call(text)
-                if not self.log4j2.is_output(text):
-                    # 非应输出内容,跳过输出
-                    continue
-            if self.output:
+            if self.output and self.parse_call(text):
                 sys.stdout.write(text)
+
+    @abc.abstractmethod
+    def parse_call(self, text: str) -> bool:
+        """
+        解析时调用,返回值决定是否输出
+        """
+        pass
 
     def exit(self) -> int:
         """
@@ -97,7 +86,7 @@ class popen(subprocess.Popen[bytes]):
         self.terminate()
         return self.wait()
 
-    def input(self) -> None:
+    def input_func(self) -> None:
         """
         非阻塞获取命令行输入
         """
@@ -110,7 +99,7 @@ class popen(subprocess.Popen[bytes]):
                         char = msvcrt.getwch()
                         match char:
                             case "\r":
-                                self.input_text("".join(buffer))
+                                self.input("".join(buffer))
                                 buffer.clear()
                                 sys.stdout.write("\n")
                                 sys.stdout.flush()
@@ -127,12 +116,12 @@ class popen(subprocess.Popen[bytes]):
                         time.sleep(0.05)
                 elif select.select([sys.stdin], [], [], 0.05)[0]:
                     if text := sys.stdin.readline():
-                        self.input_text(text, end="")
+                        self.input(text, end="")
             except (KeyboardInterrupt, EOFError):
                 self.stdin.close()
                 break
 
-    def input_text(
+    def input(
         self,
         *text: str,
         sep: str = "\n",
@@ -152,10 +141,44 @@ class popen(subprocess.Popen[bytes]):
         """
         等待退出,并支持输入
         """
-        thread = threading.Thread(target=self.input, daemon=True)
+        thread = threading.Thread(target=self.input_func, daemon=True)
         thread.start()
         try:
             thread.join()
         except (KeyboardInterrupt, EOFError):
             pass
         return self.exit()
+
+
+class popen(popen_base):
+
+    def __init__(
+        self,
+        args: list[typing.Any],
+        cwd: str | None = None,
+        output: bool = True,
+        log4j2: log4j2_base | None = None,
+        force_utf8: bool = True,
+        daemon: bool = True,
+    ) -> None:
+        self.log4j2 = log4j2
+        if log4j2 is not None:
+            args.insert(1, f"-Dlog4j.configurationFile={log4j2.config}")
+            log4j2.popen = self
+        if force_utf8 and "-Dfile.encoding=UTF-8" not in args:
+            args.insert(1, "-Dfile.encoding=UTF-8")
+        # 获取游戏所在目录
+        if cwd is None:
+            for index in range(len(args)):
+                if args[index] == "--gameDir":
+                    cwd = str(args[index + 1])
+                    break
+        super().__init__(args, cwd, output, daemon)
+
+    def parse_call(self, text: str) -> bool:
+        if self.log4j2:
+            self.log4j2.parse_call(text)
+            if not self.log4j2.is_output(text):
+                # 非应输出内容,跳过输出
+                return False
+        return True
