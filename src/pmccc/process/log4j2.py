@@ -39,13 +39,15 @@ class log4j2_base:
     """
 
     def __init__(
-        self, config: str | None = None, info: type[loginfo] = loginfo
+        self, config: str | bool = True, info: type[loginfo] = loginfo
     ) -> None:
-        self.config = (
-            os.path.join(os.path.dirname(__file__), "log4j2.xml")
-            if config is None or not os.path.isfile(config)
-            else config
-        )
+        base = os.path.join(os.path.dirname(__file__), "log4j2.xml")
+        if isinstance(config, str):
+            self.config = config if os.path.isfile(config) else base
+        elif config:
+            self.config = base
+        else:
+            self.config = None
         self.popen: popen | None = None
         self.info = info
 
@@ -74,7 +76,10 @@ class log4j2_base:
             lines = []
         if text == "\t\n":
             value = "".join(lines)
-            self.parse(value)
+            try:
+                self.parse(value)
+            except Exception as error:
+                print(repr(error))
             lines = []
         split = text.split(": ", 1)
         if len(split) >= 2 and split[0].startswith("[") and split[0].endswith("]"):

@@ -107,10 +107,11 @@ class rcon_client:
         """
         if self.ok:
             return
+        self.socket = socket.socket()
         reconnect = self.reconnect
         with self.lock:
             ret = self.connect()
-            while (not self.ok) and (reconnect < 0 or reconnect > 0):
+            while (not self.ok) and (reconnect != 0):
                 if (ret := self.connect()) is True:
                     break
                 if reconnect > 0:
@@ -132,6 +133,13 @@ class rcon_client:
         将函数添加进等待列表中,得到回复时调用函数
         """
         self.queue.put((command, func))
+
+    def say(self, msg: str) -> None:
+        """
+        执行/say,并且能够处理换行
+        """
+        for line in msg.splitlines():
+            self.command(f"say {line}")
 
     def recv_func(self) -> None:
         while not self.event.is_set():

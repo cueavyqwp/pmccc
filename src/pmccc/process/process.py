@@ -69,7 +69,7 @@ class popen_base(subprocess.Popen[bytes]):
             if encoding is None:
                 encoding = "utf-8"
             text = text.decode(encoding, errors="replace")
-            if self.output and self.parse_call(text):
+            if self.parse_call(text) and self.output:
                 sys.stdout.write(text)
 
     @abc.abstractmethod
@@ -162,7 +162,7 @@ class popen(popen_base):
         daemon: bool = True,
     ) -> None:
         self.log4j2 = log4j2
-        if log4j2 is not None:
+        if log4j2 is not None and log4j2.config is not None:
             args.insert(1, f"-Dlog4j.configurationFile={log4j2.config}")
             log4j2.popen = self
         if force_utf8 and "-Dfile.encoding=UTF-8" not in args:
