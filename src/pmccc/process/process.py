@@ -62,7 +62,7 @@ class popen_base(subprocess.Popen[str]):
             # 主进程意外终止时兜底
             _daemon.add_daemon(os.getpid(), self.pid)
 
-    def readline_iter(self) -> typing.Generator[str]:
+    def readline_iter(self) -> typing.Generator[str, None, None]:
         ret: str | None = None
         while ret != "":
             try:
