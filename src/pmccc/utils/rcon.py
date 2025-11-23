@@ -139,6 +139,9 @@ class rcon_client:
         执行/say,并且能够处理换行
         """
         for line in msg.splitlines():
+            # 处理单\n的行
+            if line == "":
+                line = " "
             self.command(f"say {line}")
 
     def recv_func(self) -> None:
