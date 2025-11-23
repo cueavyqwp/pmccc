@@ -83,7 +83,7 @@ class rcon_client:
         """
         try:
             self.socket.connect((self.server, self.port))
-        except socket.error as e:
+        except OSError as e:
             ret = e.errno
             return -1 if ret is None else ret
         self.send_packet(0, SERVERDATA_AUTH, self.password, False)

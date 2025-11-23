@@ -101,13 +101,13 @@ class logsender_client:
         while True:
             try:
                 data += self.socket.recv(1024)
-            except (socket.error, OSError, TimeoutError):
+            except (OSError, ConnectionError, TimeoutError):
                 # 要么断连了,要么规定时间内没有新消息
                 try:
                     # 发送一下看看是否还在连接,反正服务端不处理客户端输入
                     self.socket.send(b"")
                     continue
-                except (socket.error, OSError):
+                except (OSError, ConnectionError):
                     # 断连了
                     self.socket = socket.socket()
                     reconnect = self.reconnect
@@ -117,7 +117,7 @@ class logsender_client:
                         try:
                             self.connect()
                             break
-                        except (socket.error, OSError) as error:
+                        except (OSError, ConnectionError) as error:
                             if reconnect <= 0:
                                 # 捕捉了异常又抛出去(
                                 raise error
