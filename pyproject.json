@@ -28,7 +28,6 @@
             "Documentation": "https://github.com/cueavyqwp/pmccc/tree/main/docs"
         },
         "dependencies": [
-            "charset_normalizer",
             "requests",
             "psutil"
         ]

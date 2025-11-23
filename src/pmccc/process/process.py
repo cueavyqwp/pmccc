@@ -23,10 +23,8 @@ from ..utils import daemon as _daemon
 
 from .log4j2 import log4j2_base
 
-import charset_normalizer
 
-
-class popen_base(subprocess.Popen[bytes]):
+class popen_base(subprocess.Popen[str]):
     """
     自定义Popen类
     """
@@ -40,10 +38,10 @@ class popen_base(subprocess.Popen[bytes]):
     ) -> None:
         self.output = output
         self.stdin: typing.IO[  # pyright: ignore[reportIncompatibleVariableOverride]
-            bytes
+            str
         ]
         self.stdout: typing.IO[  # pyright: ignore[reportIncompatibleVariableOverride]
-            bytes
+            str
         ]
         super().__init__(
             args,
@@ -51,7 +49,11 @@ class popen_base(subprocess.Popen[bytes]):
             stderr=subprocess.STDOUT,
             stdout=subprocess.PIPE,
             cwd=cwd,
+            text=True,
+            encoding="utf-8",
+            bufsize=1,
         )
+        self.event = threading.Event()
         self.parse_thread = threading.Thread(target=self.parse, daemon=True)
         self.parse_thread.start()
         if daemon:
@@ -60,15 +62,23 @@ class popen_base(subprocess.Popen[bytes]):
             # 主进程意外终止时兜底
             _daemon.add_daemon(os.getpid(), self.pid)
 
+    def readline_iter(self) -> typing.Generator[str]:
+        ret: str | None = None
+        while ret != "":
+            try:
+                ret = self.stdout.readline()
+                yield ret
+            except UnicodeDecodeError:
+                pass
+        yield ""
+
     def parse(self):
         """
         解析输出
         """
-        for text in iter(self.stdout.readline, ""):
-            encoding = charset_normalizer.detect(text)["encoding"]
-            if encoding is None:
-                encoding = "utf-8"
-            text = text.decode(encoding, errors="replace")
+        for text in self.readline_iter():
+            if text == "" and self.event.is_set():
+                break
             if self.parse_call(text) and self.output:
                 sys.stdout.write(text)
 
@@ -78,6 +88,10 @@ class popen_base(subprocess.Popen[bytes]):
         解析时调用,返回值决定是否输出
         """
         pass
+
+    def terminate(self) -> None:
+        self.event.set()
+        return super().terminate()
 
     def exit(self) -> int:
         """
@@ -92,7 +106,7 @@ class popen_base(subprocess.Popen[bytes]):
         """
         if os.name == "nt":
             buffer: list[str] = []
-        while self.poll() is None:
+        while not self.event.is_set():
             try:
                 if os.name == "nt":
                     if msvcrt.kbhit():
@@ -127,13 +141,12 @@ class popen_base(subprocess.Popen[bytes]):
         sep: str = "\n",
         end: str = "\n",
         autoflush: bool = True,
-        encoding: str = "utf-8",
     ) -> None:
         """
         向stdin插入文本
         """
         if self.stdin:
-            self.stdin.write((sep.join(text) + end).encode(encoding, errors="replace"))
+            self.stdin.write(f"{sep.join(text)}{end}")
             if autoflush and (end.endswith("\n") or text[-1].endswith("\n")):
                 self.stdin.flush()
 
