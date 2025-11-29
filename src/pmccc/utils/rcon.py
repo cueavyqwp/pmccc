@@ -63,9 +63,7 @@ class rcon_client:
         port: int = 25575,
         password: str = "",
         reconnect: int = 3,
-        noresponse: bool = False,
     ) -> None:
-        self.noresponse = noresponse
         self.reconnect = reconnect
         self.password = password
         self.connecting = False
@@ -142,26 +140,23 @@ class rcon_client:
         self.connecting = True
         self.socket = _socket.socket()
         reconnect = self.reconnect
-        with self.lock:
-            ret = self.connect()
-            while (not self.ok) and (reconnect != 0):
-                if (ret := self.connect()) is True:
-                    break
-                if reconnect > 0:
-                    reconnect -= 1
-            if ret is not True:
-                raise ConnectionError(ret)
+        ret = self.connect()
+        while (not self.ok) and (reconnect != 0):
+            if (ret := self.connect()) is True:
+                break
+            if reconnect > 0:
+                reconnect -= 1
+        if ret is not True:
+            raise ConnectionError(ret)
         self.connecting = False
 
     def command(self, command: str) -> str:
         """
         发送命令
         """
-        send_packet(self.socket, 0, SERVERDATA_EXECCOMMAND, command)
-        if self.noresponse:
-            # 不等待回应,加快速度
-            return ""
-        return recv_packet(self.socket)[2]
+        with self.lock:
+            send_packet(self.socket, 0, SERVERDATA_EXECCOMMAND, command)
+            return recv_packet(self.socket)[2]
 
     def command_call(
         self, command: str, func: typing.Callable[[str], typing.Any] | None = None
@@ -187,13 +182,10 @@ class rcon_client:
                 command, func = self.queue.get(timeout=0.1)
             except queue.Empty:
                 continue
-            with self.lock:
-                try:
-                    ret = self.command(command)
-                except Exception as error:
-                    ret = f"Python Error: {repr(error)}"
-            if self.noresponse:
-                continue
+            try:
+                ret = self.command(command)
+            except Exception as error:
+                ret = f"Python Error: {repr(error)}"
             if func:
                 func(ret)
 
