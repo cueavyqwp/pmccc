@@ -30,12 +30,12 @@ class logsender_log4j2(_log4j2.log4j2_base):
         self.pattern = pattern
         self.address = (ip, port)
         self.client: list[socket.socket] = []
+        self.thread = threading.Thread(target=self.main, daemon=True)
         self.socket = socket.socket()
 
     def start(self) -> None:
         self.socket.bind(self.address)
         self.socket.listen(0)
-        self.thread = threading.Thread(target=self.main, daemon=True)
         self.thread.start()
 
     def shutdown(self) -> None:

@@ -1,5 +1,5 @@
 """
-对MC服务端RCON协议的支持
+对RCON协议的支持
 """
 
 __all__ = [
@@ -7,19 +7,49 @@ __all__ = [
     "SERVERDATA_EXECCOMMAND",
     "SERVERDATA_AUTH_RESPONSE",
     "SERVERDATA_RESPONSE_VALUE",
+    "read",
+    "send_packet",
+    "recv_packet",
     "rcon_client",
+    "rcon_server",
 ]
 
+import socket as _socket
 import threading
 import typing
-import socket
 import struct
 import queue
+import abc
 
 SERVERDATA_AUTH = 3
 SERVERDATA_EXECCOMMAND = 2
 SERVERDATA_AUTH_RESPONSE = 2
 SERVERDATA_RESPONSE_VALUE = 0
+
+
+def read(socket: _socket.socket, length: int) -> bytes:
+    data = b""
+    while len(data) < length:
+        chunk = socket.recv(length - len(data))
+        if chunk == b"":
+            raise ConnectionError
+        data += chunk
+    return data
+
+
+def send_packet(socket: _socket.socket, req_id: int, p_type: int, body: str):
+    data = body.encode("utf8") + b"\x00\x00"
+    length = len(data) + 8
+    packet = struct.pack("<iii", length, req_id, p_type) + data
+    socket.sendall(packet)
+
+
+def recv_packet(socket: _socket.socket) -> tuple[int, int, str]:
+    length = struct.unpack("<i", read(socket, 4))[0]
+    data = read(socket, length)
+    req_id, p_type = struct.unpack("<ii", data[:8])
+    body = data[8:-2].decode("utf-8")
+    return req_id, p_type, body
 
 
 class rcon_client:
@@ -29,24 +59,26 @@ class rcon_client:
 
     def __init__(
         self,
-        server: str = "127.0.0.1",
+        server: str = "localhost",
         port: int = 25575,
         password: str = "",
         reconnect: int = 3,
+        noresponse: bool = False,
     ) -> None:
+        self.noresponse = noresponse
         self.reconnect = reconnect
         self.password = password
+        self.connecting = False
         self.server = server
         self.port = port
-        self.lastsend = 0.0
         self.lock = threading.Lock()
-        self.socket = socket.socket()
+        self.socket = _socket.socket()
         self.event = threading.Event()
         self.thread = threading.Thread(target=self.recv_func, daemon=True)
         self.queue: queue.Queue[
             tuple[str, typing.Callable[[str], typing.Any] | None]
         ] = queue.Queue()
-        self.socket.settimeout(30)
+        self.socket.settimeout(5)
         self.thread.start()
 
     @property
@@ -58,7 +90,7 @@ class rcon_client:
             timeout = self.socket.gettimeout()
             self.socket.settimeout(0)
             try:
-                data = self.socket.recv(1, socket.MSG_PEEK)
+                data = self.socket.recv(1, _socket.MSG_PEEK)
                 return data != b""
             except BlockingIOError:
                 return True
@@ -86,8 +118,8 @@ class rcon_client:
         except OSError as e:
             ret = e.errno
             return -1 if ret is None else ret
-        self.send_packet(0, SERVERDATA_AUTH, self.password, False)
-        req_id, p_type, _ = self.recv_packet(False)
+        send_packet(self.socket, 0, SERVERDATA_AUTH, self.password)
+        req_id, p_type, _ = recv_packet(self.socket)
         if p_type != SERVERDATA_AUTH_RESPONSE or req_id != 0:
             return -2
         return True
@@ -105,9 +137,10 @@ class rcon_client:
         """
         确保处于连接状态
         """
-        if self.ok:
+        if self.ok or self.connecting:
             return
-        self.socket = socket.socket()
+        self.connecting = True
+        self.socket = _socket.socket()
         reconnect = self.reconnect
         with self.lock:
             ret = self.connect()
@@ -118,13 +151,17 @@ class rcon_client:
                     reconnect -= 1
             if ret is not True:
                 raise ConnectionError(ret)
+        self.connecting = False
 
     def command(self, command: str) -> str:
         """
         发送命令
         """
-        self.send_packet(0, SERVERDATA_EXECCOMMAND, command)
-        return self.recv_packet()[2]
+        send_packet(self.socket, 0, SERVERDATA_EXECCOMMAND, command)
+        if self.noresponse:
+            # 不等待回应,加快速度
+            return ""
+        return recv_packet(self.socket)[2]
 
     def command_call(
         self, command: str, func: typing.Callable[[str], typing.Any] | None = None
@@ -153,35 +190,77 @@ class rcon_client:
             with self.lock:
                 try:
                     ret = self.command(command)
-                except Exception as e:
-                    ret = f"Python Error: {repr(e)}"
-                if func:
-                    func(ret)
+                except Exception as error:
+                    ret = f"Python Error: {repr(error)}"
+            if self.noresponse:
+                continue
+            if func:
+                func(ret)
 
-    def read(self, length: int, ensure_connect: bool = True) -> bytes:
-        if ensure_connect:
-            self.ensure_connect()
-        data = b""
-        while len(data) < length:
-            chunk = self.socket.recv(length - len(data))
-            if chunk == b"":
-                raise ConnectionError
-            data += chunk
-        return data
 
-    def send_packet(
-        self, req_id: int, p_type: int, body: str, ensure_connect: bool = True
-    ):
-        if ensure_connect:
-            self.ensure_connect()
-        data = body.encode("utf8") + b"\x00\x00"
-        length = len(data) + 8
-        packet = struct.pack("<iii", length, req_id, p_type) + data
-        self.socket.sendall(packet)
+class rcon_server:
+    """
+    RCON服务端
+    """
 
-    def recv_packet(self, ensure_connect: bool = True) -> tuple[int, int, str]:
-        length = struct.unpack("<i", self.read(4, ensure_connect))[0]
-        data = self.read(length, ensure_connect)
-        req_id, p_type = struct.unpack("<ii", data[:8])
-        body = data[8:-2].decode("utf-8")
-        return req_id, p_type, body
+    def __init__(
+        self,
+        ip: str = "localhost",
+        port: int = 25575,
+        password: str = "",
+    ) -> None:
+        self.password = password
+        self.address = (ip, port)
+        self.socket = _socket.socket()
+        self.event = threading.Event()
+        self.thread = threading.Thread(target=self.main, daemon=True)
+
+    def start(self) -> None:
+        self.socket.bind(self.address)
+        self.socket.listen(0)
+        self.thread.start()
+
+    def main(self) -> None:
+        """
+        服务端主逻辑
+        """
+        while True:
+            threading.Thread(
+                target=self.user, args=(self.socket.accept()[0],), daemon=True
+            ).start()
+
+    def user(self, user: _socket.socket) -> None:
+        """
+        与客户端通信
+        """
+        try:
+            req_id, p_type, body = recv_packet(user)
+            # 客户端首次必须登录
+            assert p_type == SERVERDATA_AUTH
+            ok = body == self.password
+            # 密码匹配req_id原样返回,否则返回-1
+            send_packet(user, req_id if ok else -1, SERVERDATA_AUTH_RESPONSE, "")
+            assert ok
+            while True:
+                req_id, p_type, body = recv_packet(user)
+                # 此时按理类型都为SERVERDATA_EXECCOMMAND
+                if p_type != SERVERDATA_EXECCOMMAND:
+                    continue
+                try:
+                    ret = self.command(body)
+                except Exception as error:
+                    ret = f"Python Error: {repr(error)}"
+                send_packet(user, req_id, SERVERDATA_RESPONSE_VALUE, ret)
+        except AssertionError:
+            pass
+        except (OSError, ConnectionError):
+            # 捕捉连接类错误,跟着正常逻辑一块关闭socket
+            pass
+        user.close()
+
+    @abc.abstractmethod
+    def command(self, command: str) -> str:
+        """
+        执行命令
+        """
+        pass
