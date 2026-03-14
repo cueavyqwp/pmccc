@@ -178,6 +178,7 @@ class version_data:
         player: _player.player_base,
         game_directory: str,
         assets_directory: str,
+        libraries_directory: str,
         natives_directory: str,
         replacement: typing.Optional[dict[str, typing.Any]] = None,
         force_utf8: bool = True,
@@ -212,6 +213,7 @@ class version_data:
             "${classpath}": class_path,
             "${natives_directory}": natives_directory,
             "${classpath_separator}": self.info.split,
+            "${library_directory}": libraries_directory,
         }
         if replacement is not None:
             data |= replacement
@@ -370,6 +372,7 @@ class version_manager:
             player,
             self.dirname,
             assets_directory,
+            libraries_directory,
             self.native,
             replacement,
             force_utf8,
