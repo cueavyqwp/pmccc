@@ -36,6 +36,8 @@ def select_java(
             target += [21, 17, 18, 19, 20, 22]
         case 21:
             target += [21, 22]
+        case 25:
+            target += [26, 25]
         case _:
             pass
     return [value for value in target if available is None or value in available]
