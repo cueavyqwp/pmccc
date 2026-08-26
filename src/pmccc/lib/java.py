@@ -167,8 +167,9 @@ class java_manager(config.config_base):
         """
         传入bin目录,获取Java信息
         """
-        if not os.path.isdir(path):
-            return
+        # 若传入了二进制文件,获取其所在目录
+        if os.path.isfile(path):
+            path = os.path.dirname(path)
         target = ""
         version = None
         arch = None

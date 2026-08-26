@@ -126,12 +126,3 @@ class installer:
                 file_hash,
             )
         return ret
-
-
-class installer_manager:
-    """
-    安装管理器
-    """
-
-    def __init__(self) -> None:
-        pass

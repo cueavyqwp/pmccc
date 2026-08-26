@@ -7,17 +7,15 @@ from __future__ import annotations
 import collections.abc
 import typing
 
-__all__ = ["client_launcher_info", "client_lanucher_config", "client_launcher"]
+__all__ = ["client_launcher_info", "client_launcher"]
 
 from ..pmccc import __version__
 from ..lib import sysinfo
-from ..lib import config
 from ..lib import java
 
 from .. import process
 
 from .player import player_base, player_manager
-
 
 if typing.TYPE_CHECKING:
     from .minecraft import minecraft_manager
@@ -43,18 +41,6 @@ class client_launcher_info:
             version = __version__
         self.name = name
         self.version = version
-
-
-class client_lanucher_config(config.config_base):
-    """
-    启动器配置
-    """
-
-    def config_export(self) -> dict[str, typing.Any]:
-        return {}
-
-    def config_loads(self, data: dict[str, typing.Any]) -> None:
-        pass
 
 
 class client_launcher:
@@ -83,12 +69,24 @@ class client_launcher:
         """
         self.java.search(dirs)
 
+    def add_java(self, path: str | typing.Iterable[str]) -> tuple[bool, ...]:
+        """
+        添加Java
+
+        path: Java所在目录
+        """
+        return tuple(
+            self.java.add_path(item)
+            for item in ((path,) if isinstance(path, str) else path)
+        )
+
     def get_args(
         self,
         minecraft: minecraft_manager,
         version: _version.version_manager,
         player: player_base,
         library: list[str] | None = None,
+        java: java.java_manager | str | None = None,
         custom_jvm: list[str] | None = None,
         custom_game: list[str] | None = None,
         main_class: str | None = None,
@@ -107,6 +105,8 @@ class client_launcher:
 
         library: 库文件列表
 
+        java: 使用的Java
+
         custom_jvm: 自定义jvm参数
 
         custom_game: 自定义游戏参数
@@ -121,7 +121,7 @@ class client_launcher:
         """
         return version.get_args(
             self.info,
-            self.java,
+            self.java if java is None else java,
             player,
             minecraft.path_assets,
             minecraft.path_libraries,
@@ -139,6 +139,7 @@ class client_launcher:
         minecraft: minecraft_manager,
         version: str | _version.version_manager,
         player: player_base | int,
+        java: java.java_manager | str | None = None,
         custom_jvm: list[str] | None = None,
         custom_game: list[str] | None = None,
         main_class: str | None = None,
@@ -157,6 +158,8 @@ class client_launcher:
         version: 版本名称或版本管理器
 
         player: 玩家或玩家索引
+
+        java: 使用的Java
 
         custom_jvm: 自定义jvm参数
 
@@ -188,6 +191,7 @@ class client_launcher:
                 version,
                 player,
                 library,
+                self.java if java is None else java,
                 custom_jvm,
                 custom_game,
                 main_class,

@@ -85,7 +85,7 @@ def valid_filename(name: str) -> bool:
     bad = set('<>:"\\|?*')
     if set(name) & bad:
         return False
-    if os.path.splitext(name)[0].upper() in (
+    if os.name == "nt" and os.path.splitext(name)[0].upper() in (
         "AUX",
         "COM1",
         "COM2",
