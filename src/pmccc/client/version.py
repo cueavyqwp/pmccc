@@ -51,7 +51,7 @@ class version_data:
         return (f"{old}.json", f"{id}.json"), (f"{old}.jar", f"{id}.jar")
 
     def get_args(
-        self, features: typing.Optional[dict[str, bool]] = None
+        self, features: dict[str, bool] | None = None
     ) -> tuple[list[str], list[str]]:
         """
         返回jvm参数与游戏参数
@@ -180,7 +180,7 @@ class version_data:
         assets_directory: str,
         libraries_directory: str,
         natives_directory: str,
-        replacement: typing.Optional[dict[str, typing.Any]] = None,
+        replacement: dict[str, typing.Any] | None = None,
         force_utf8: bool = True,
     ) -> list[typing.Any]:
         """
@@ -347,8 +347,8 @@ class version_manager:
         custom_jvm: list[str] | None = None,
         custom_game: list[str] | None = None,
         main_class: str | None = None,
-        replacement: typing.Optional[dict[str, typing.Any]] = None,
-        features: typing.Optional[dict[str, bool]] = None,
+        replacement: dict[str, typing.Any] | None = None,
+        features: dict[str, bool] | None = None,
         force_utf8: bool = True,
     ) -> list[typing.Any]:
         """

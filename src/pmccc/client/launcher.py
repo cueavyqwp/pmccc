@@ -91,7 +91,7 @@ class client_launcher:
         custom_game: list[str] | None = None,
         main_class: str | None = None,
         replacement: dict[str, typing.Any] | None = None,
-        features: typing.Optional[dict[str, bool]] = None,
+        features: dict[str, bool] | None = None,
         force_utf8: bool = True,
     ) -> list[typing.Any]:
         """
@@ -144,7 +144,7 @@ class client_launcher:
         custom_game: list[str] | None = None,
         main_class: str | None = None,
         replacement: dict[str, typing.Any] | None = None,
-        features: typing.Optional[dict[str, bool]] = None,
+        features: dict[str, bool] | None = None,
         force_utf8: bool = True,
         output: bool = True,
         log4j2: process.log4j2_base | None = None,

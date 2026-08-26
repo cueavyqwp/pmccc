@@ -12,7 +12,7 @@ from .info import sysinfo
 
 def check(
     rules: list[dict[str, typing.Any]],
-    features: typing.Optional[dict[str, bool]] = None,
+    features: dict[str, bool] | None = None,
     info: sysinfo | None = None,
 ) -> bool:
     """
